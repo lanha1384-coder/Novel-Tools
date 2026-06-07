@@ -8,28 +8,125 @@
         <style>
             body {
                 margin: 0;
-                font-family: system-ui, sans-serif;
-                padding: 24px;
-                background: radial-gradient(circle at top, #1a1a2e, #0f0f0f);
-                color: #eee;
+                padding: 32px;
+
+                display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                display: flex;
+
+                min-height: 100vh;
+
+                font-family:
+                    Inter,
+                    system-ui,
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    sans-serif;
+
+                background: radial-gradient(
+                    circle at top left,
+                    #2b3560 0%,
+                    #141824 40%,
+                    #090909 100%
+                );
+
+                color: rgba(255, 255, 255, 0.92);
+
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
             }
+
             button {
-                padding: 10px 18px;
+                padding: 12px 22px;
+                margin-top: 12px;
+
+                border: 1px solid rgba(255, 255, 255, 0.12);
+                border-radius: 14px;
+
+                background: rgba(255, 255, 255, 0.08);
+                color: #fff;
+
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+
                 cursor: pointer;
-                margin-top: 10px;
+
+                transition:
+                    transform 0.2s ease,
+                    background 0.2s ease,
+                    border-color 0.2s ease,
+                    box-shadow 0.2s ease;
+
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
             }
+
+            button:hover {
+                background: rgba(255, 255, 255, 0.14);
+                border-color: rgba(255, 255, 255, 0.2);
+                transform: translateY(-2px);
+            }
+
+            button:active {
+                transform: translateY(0);
+            }
+
             textarea {
                 width: 100%;
                 height: 420px;
                 margin-top: 20px;
-                background: #000;
-                color: #0f0;
-                padding: 12px;
-                font-family: monospace;
+                padding: 16px;
+
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 18px;
+
+                background: rgba(15, 15, 20, 0.75);
+                color: #e8e8e8;
+
+                backdrop-filter: blur(24px);
+                -webkit-backdrop-filter: blur(24px);
+
+                font-family: "JetBrains Mono", "Cascadia Code", monospace;
+
+                font-size: 14px;
+                line-height: 1.7;
+
+                resize: vertical;
+                outline: none;
+
+                transition:
+                    border-color 0.25s ease,
+                    box-shadow 0.25s ease;
+            }
+
+            textarea:focus {
+                border-color: rgba(99, 102, 241, 0.6);
+                box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+            }
+
+            textarea::placeholder {
+                color: rgba(255, 255, 255, 0.35);
+            }
+
+            ::-webkit-scrollbar {
+                width: 10px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.18);
+                border-radius: 999px;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: rgba(255, 255, 255, 0.3);
+            }
+
+            ::selection {
+                background: rgba(99, 102, 241, 0.3);
             }
             .lang-wrapper {
                 position: fixed;
@@ -118,6 +215,7 @@
                 <option value="de-de">🇩🇪 Deutsch</option>
                 <option value="fr-fr">🇫🇷 Français</option>
                 <option value="es-es">🇪🇸 Español</option>
+                <option value="la">🏛️Latina</option>
             </select>
         </div>
         <input type="file" id="file" accept=".epub" />
@@ -127,7 +225,6 @@
             style="display: none"
             data-i18n="download.txt"
         ></button>
-
         <textarea id="output"></textarea>
         <noscript>
             <div
@@ -135,8 +232,10 @@
                 data-i18n="noscript.tools"
             ></div>
         </noscript>
-        <input type="radio" name="ver" onclick="switchVersion('v1')" /> V1
-        <input type="radio" name="ver" onclick="switchVersion('v2')" /> V2
+        <input type="radio" name="ver" onclick="switchVersion('v1')" /> V1(MDT
+        Style)
+        <input type="radio" name="ver" onclick="switchVersion('v2')" />
+        V2(Reading TXT Style)
         <script src="asciiBox.js"></script>
         <script id="converter-script">
             const SCRIPT_MAP = {

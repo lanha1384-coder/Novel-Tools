@@ -5,21 +5,133 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title data-i18n="mdt.reader">Reader</title>
         <style>
+            body.dark {
+                background: radial-gradient(
+                    circle at top left,
+                    #444 0%,
+                    #2e2e2e 40%,
+                    #1b1b1b 100%
+                );
+                color: #fff;
+            }
+
+            body.dark > #app > details {
+                color: #1a1a1a;
+            }
+
+            body.dark > #app > summary {
+                color: #1a1a1a;
+            }
+
+            body.deep {
+                background: radial-gradient(
+                    circle at top,
+                    #1a1a1a 0%,
+                    #000 70%
+                );
+                color: #fff;
+            }
+
+            body.deep > #app > details {
+                color: #1a1a1a;
+            }
+
+            body.deep > #app > summary {
+                color: #1a1a1a;
+            }
+
+            body.anias {
+                background: linear-gradient(
+                    135deg,
+                    hsl(34, 44%, 75%),
+                    hsl(34, 44%, 60%)
+                );
+                color: #111;
+            }
+
+            body.ruby {
+                background: linear-gradient(135deg, #18324b, #112435, #0b1722);
+                color: #fff;
+            }
+
+            body.navajo {
+                background: linear-gradient(135deg, #c8ab8f, #ba9c80);
+                color: #111;
+            }
+
+            body.khaki {
+                background: linear-gradient(135deg, #e3e3c1, #d7d7af);
+                color: #7b6517;
+            }
+
             body {
-                --bg: #fafafa;
+                --bg: rgba(255, 255, 255, 0.65);
                 --fg: #111;
+
                 background-color: var(--bg);
                 color: var(--fg);
-                font-family: system-ui, sans-serif;
+
+                font-family:
+                    Inter,
+                    system-ui,
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    sans-serif;
+
                 max-width: 900px;
                 margin: auto;
                 padding: 24px;
-                background: #fafafa;
+
                 line-height: 1.8;
+                letter-spacing: 0.2px;
+
+                backdrop-filter: blur(20px) saturate(180%);
+                -webkit-backdrop-filter: blur(20px) saturate(180%);
+
                 transition:
-                    background-color 0.25s ease,
-                    color 0.25s ease;
+                    background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                    color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+                min-height: 100vh;
+                background-attachment: fixed;
             }
+
+            body::before {
+                content: "";
+                position: fixed;
+                inset: 0;
+                z-index: -1;
+            }
+
+            ::-webkit-scrollbar {
+                width: 10px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: rgba(127, 127, 127, 0.35);
+                border-radius: 999px;
+                border: 2px solid transparent;
+                background-clip: padding-box;
+                backdrop-filter: blur(12px);
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: rgba(127, 127, 127, 0.55);
+            }
+
+            ::selection {
+                background: rgba(100, 149, 237, 0.25);
+            }
+
+            * {
+                -webkit-tap-highlight-color: transparent;
+                -webkit-font-smoothing: antialiased;
+            }
+
             details {
                 margin-bottom: 16px;
                 border: 1px solid #ddd;
@@ -55,50 +167,7 @@
             details > details {
                 margin-top: 12px;
             }
-            body.dark {
-                background: #2e2e2e;
-                color: #fff;
-            }
-            body.deep {
-                background: #000;
-                color: #fff;
-            }
-            body.anias {
-                background: hsl(34, 44%, 69%);
-                color: #000;
-            }
-            body.dark details,
-            body.deep details {
-                background: #1a1a1a;
-                border-color: #444;
-            }
-            body.anias details {
-                background: hsl(34, 44%, 75%);
-            }
-            body.ruby {
-                background-color: #112435;
-                color: #ffffff;
-            }
-            body.ruby details {
-                background: hsla(0, 0%, 100%, 0.06);
-                border-color: hsla(0, 0%, 100%, 0.2);
-            }
-            body.navajo {
-                background-color: #ba9c80;
-                color: #000000;
-            }
-            body.navajo details {
-                background: hsla(0, 0%, 100%, 0.06);
-                border-color: hsla(0, 0%, 100%, 0.2);
-            }
-            body.khaki {
-                background-color: #d7d7af;
-                color: #957c1d;
-            }
-            body.khaki details {
-                background: hsla(0, 0%, 100%, 0.4);
-                border-color: hsla(0, 0%, 0%, 0.25);
-            }
+
             @media (max-width: 600px) {
                 body {
                     padding: 12px;
@@ -294,6 +363,36 @@
                 background: #111;
                 color: white;
             }
+            .chapter-loading {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 120px;
+                opacity: 0.8;
+                font-size: 14px;
+            }
+
+            .chapter-loading::after {
+                content: "";
+                width: 18px;
+                height: 18px;
+                margin-left: 10px;
+                border: 2px solid currentColor;
+                border-right-color: transparent;
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+            }
+
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .virtual-scroll details[open] > .content {
+                max-height: 550px;
+                overflow: auto;
+            }
         </style>
     </head>
     <body>
@@ -330,9 +429,10 @@
                 <option value="de-de">🇩🇪 Deutsch</option>
                 <option value="fr-fr">🇫🇷 Français</option>
                 <option value="es-es">🇪🇸 Español</option>
+                <option value="la">🏛️Latina</option>
             </select>
         </div>
-        <h1 style="text-align: center">📖 Máy Đọc Truyện</h1>
+        <h1 style="text-align: center" data-i18n="subtitle.reader"></h1>
 
         <div id="modes" style="text-align: center; margin-bottom: 16px">
             <label data-i18n="appearance.opt"></label>
@@ -374,676 +474,13 @@
                 data-i18n="noscript.tools"
             ></div>
         </noscript>
-        <script id="mainscr">
-            const status = document.getElementById("status");
-            const fileInput = document.getElementById("file");
-            const clearBtn = document.getElementById("clearFile");
-            const app = document.getElementById("app");
-            function escapeHtml(str) {
-                return str
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;");
-            }
-            function renderChapter(div, content) {
-                div.dataset.loaded = "1";
-                div.textContent = "";
-                const isEmpty = content.split(/\r?\n/).every((line) => {
-                    const t = line.trim();
-                    return t === "" || t === "•";
-                });
-                if (isEmpty) {
-                    div.classList.add("empty");
-                    ["•", "Chưa cập nhật", "•"].forEach((text, i) => {
-                        const span = document.createElement("span");
-                        span.className = i === 1 ? "empty-text" : "bullet";
-                        span.textContent = text;
-                        div.appendChild(span);
-                    });
-                } else {
-                    const lines = content.split(/\r?\n/);
-                    let html = "";
-                    lines.forEach((line, index) => {
-                        const trimmed = line.trim();
-                        if (trimmed === "•") {
-                            html += `<span class="bullet">•</span>`;
-                            return;
-                        }
-                        if (trimmed === "") {
-                            html += "<br><br>";
-                            return;
-                        }
-                        html += escapeHtml(line);
-                        html += "<br><br>";
-                    });
-                    html = html.replace(/(<br><br>)+$/, "");
-                    div.innerHTML = html;
-                    div.classList.add("chapter-content");
-                    const closeBtn = document.createElement("button");
-                    closeBtn.textContent = "Đóng chương";
-                    closeBtn.className = "close-chapter-btn";
-                    closeBtn.addEventListener("click", () => {
-                        const details = div.closest("details");
-                        if (!details) return;
-                        const summary =
-                            details.querySelector(":scope > summary");
-                        if (!summary) return;
-                        const scrollContainer =
-                            details.closest(".virtual-scroll");
-                        if (!scrollContainer) {
-                            summary.dispatchEvent(
-                                new MouseEvent("click", { bubbles: true }),
-                            );
-                            return;
-                        }
-                        const targetTop = summary.offsetTop;
-                        scrollContainer.scrollTo({
-                            top: targetTop,
-                            behavior: "smooth",
-                        });
-                        let lastScrollTop = -1;
-                        let stableFrames = 0;
-                        function waitUntilStable() {
-                            const current = scrollContainer.scrollTop;
-                            if (Math.abs(current - lastScrollTop) < 1) {
-                                stableFrames++;
-                            } else {
-                                stableFrames = 0;
-                            }
-                            lastScrollTop = current;
-                            if (stableFrames > 6) {
-                                summary.dispatchEvent(
-                                    new MouseEvent("click", { bubbles: true }),
-                                );
-                            } else {
-                                requestAnimationFrame(waitUntilStable);
-                            }
-                        }
-                        requestAnimationFrame(waitUntilStable);
-                    });
-                    div.appendChild(closeBtn);
-                }
-            }
-            function enableDetailsAnimation(details) {
-                const content = details.querySelector(":scope > .content");
-                if (!content) return;
-                details.addEventListener("click", (e) => {
-                    const summary = e.target.closest("summary");
-                    if (!summary || summary.parentElement !== details) return;
-                    e.preventDefault();
-                    const isOpen = details.hasAttribute("open");
-                    if (!isOpen) {
-                        isAnimating = true;
-                        details.setAttribute("open", "");
-                        details.dispatchEvent(new Event("toggle"));
-                        content.style.maxHeight = "0px";
-                        requestAnimationFrame(() => {
-                            content.style.maxHeight =
-                                content.scrollHeight + "px";
-                            content.addEventListener(
-                                "transitionend",
-                                function handler() {
-                                    content.style.maxHeight = "none";
-                                    isAnimating = false;
-                                    content.removeEventListener(
-                                        "transitionend",
-                                        handler,
-                                    );
-                                },
-                            );
-                        });
-                    } else {
-                        isAnimating = true;
-                        const startHeight = content.scrollHeight;
-                        content.style.maxHeight = startHeight + "px";
-                        requestAnimationFrame(() => {
-                            content.style.maxHeight = "0px";
-                        });
-                        function finishClose() {
-                            details.removeAttribute("open");
-                            details.dispatchEvent(new Event("toggle"));
-                            isAnimating = false;
-                            content.removeEventListener(
-                                "transitionend",
-                                finishClose,
-                            );
-                        }
-                        content.addEventListener("transitionend", finishClose);
-                        setTimeout(finishClose, 700);
-                    }
-                });
-            }
-            document.getElementById("file").addEventListener("change", (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                status.textContent = "📂 Đang tải file...";
-                status.style.color = "#666";
-                app.classList.add("fade-out");
-                const reader = new FileReader();
-                reader.onload = () => {
-                    setTimeout(() => {
-                        try {
-                            parseText(reader.result);
-                            hideIntro();
-                            slideInDetails();
-                            status.textContent = "✅ Tải thành công";
-                            status.style.color = "green";
-                            document.querySelector("h2").style.display = "none";
-                            document.getElementById("chuy").style.display =
-                                "none";
-                            clearBtn.style.display = "inline-block";
-                            app.classList.remove("fade-out");
-                            app.classList.add("fade-in");
-                        } catch (err) {
-                            console.error(err);
-                            status.textContent = "❌ File lỗi hoặc sai format";
-                            status.style.color = "red";
-                        }
-                    }, 160);
-                };
-                reader.readAsText(file, "utf-8");
-                function parseText(text) {
-                    app.textContent = "";
-                    const STORAGE_KEY = "opened-chapters";
-                    let chapterToScroll = null;
-                    const titleMatch = text.match(/<>\s*([\s\S]*?)\s*<\/>/);
-                    if (titleMatch) {
-                        const h1 = document.createElement("h1");
-                        h1.textContent = titleMatch[1].trim();
-                        app.appendChild(h1);
-                        text = text.replace(titleMatch[0], "");
-                    }
-                    const descMatch = text.match(
-                        /<info>\s*([\s\S]*?)\s*<\/info>/,
-                    );
-                    let descriptionContent = "Chưa cập nhật";
-                    if (descMatch) {
-                        const cleaned = descMatch[1].trim();
-                        if (cleaned.length > 0) {
-                            descriptionContent = cleaned;
-                        }
-                        text = text.replace(descMatch[0], "");
-                    }
-                    const descDetails = document.createElement("details");
-                    const descSummary = document.createElement("summary");
-                    descSummary.textContent = "Mô tả";
-                    const descDiv = document.createElement("div");
-                    descDiv.className = "content";
-                    descDiv.textContent = descriptionContent;
-                    descDetails.appendChild(descSummary);
-                    descDetails.appendChild(descDiv);
-                    enableDetailsAnimation(descDetails);
-                    app.appendChild(descDetails);
-                    const listSectionMatch = text.match(
-                        /<list>[\s\S]*?<\/list>/,
-                    );
-                    let listSection = "";
-                    let outsideText = text;
-                    if (listSectionMatch) {
-                        listSection = listSectionMatch[0];
-                        outsideText = text.replace(listSection, "");
-                    }
-                    let characters = [];
-                    const listMatch = outsideText.match(/\[\s*([\s\S]*?)\s*\]/);
-                    if (listMatch) {
-                        characters = listMatch[1]
-                            .split("\n")
-                            .map((l) => l.trim())
-                            .filter(Boolean);
-                        outsideText = outsideText.replace(listMatch[0], "");
-                    }
-                    if (characters.length === 0) {
-                        characters = ["Chưa cập nhật"];
-                    }
-                    const charDetails = document.createElement("details");
-                    const charSummary = document.createElement("summary");
-                    charSummary.textContent = "Danh sách nhân vật";
-                    const charDiv = document.createElement("div");
-                    charDiv.className = "content";
-                    const ul = document.createElement("ul");
-                    characters.forEach((name) => {
-                        const li = document.createElement("li");
-                        li.textContent = name;
-                        ul.appendChild(li);
-                    });
-                    charDiv.appendChild(ul);
-                    charDetails.appendChild(charSummary);
-                    charDetails.appendChild(charDiv);
-                    enableDetailsAnimation(charDetails);
-                    app.appendChild(charDetails);
-
-                    text = outsideText + listSection;
-                    const listRegex = /<list>([\s\S]*?)<\/list>/g;
-                    let listChap;
-                    while ((listChap = listRegex.exec(text)) !== null) {
-                        const listContent = listChap[1];
-                        const folder = document.createElement("details");
-                        const folderSummary = document.createElement("summary");
-                        folderSummary.textContent = "Danh sách chương";
-                        const folderContent = document.createElement("div");
-                        folderContent.className = "content virtual-scroll";
-                        folder.appendChild(folderSummary);
-                        folder.appendChild(folderContent);
-                        enableDetailsAnimation(folder);
-                        app.appendChild(folder);
-                        const regex = /([^\n{]+)\{([\s\S]*?)\}/g;
-                        let match;
-                        const chapters = [];
-                        while ((match = regex.exec(listContent)) !== null) {
-                            chapters.push({
-                                title: match[1].trim(),
-                                body: match[2]
-                                    .replace(/^\s*\n/, "")
-                                    .replace(/\n\s*$/, ""),
-                            });
-                        }
-                        const ITEM_HEIGHT = 80;
-                        const RENDER = 40;
-                        let startIndex = 0;
-                        let openChapters = new Map();
-                        let placeholders = new Map();
-                        function createPlaceholder(index) {
-                            const div = document.createElement("div");
-                            div.style.height = ITEM_HEIGHT + "px";
-                            div.dataset.index = index;
-                            return div;
-                        }
-                        function openChapter(index) {
-                            if (openChapters.has(index)) return;
-                            const chapter = chapters[index];
-                            const container = document.createElement("details");
-                            container.open = true;
-                            container.addEventListener("toggle", () => {
-                                if (!container.open) {
-                                    closeChapter(index);
-                                }
-                            });
-                            const summary = document.createElement("summary");
-                            summary.textContent = chapter.title;
-                            const content = document.createElement("div");
-                            content.className = "content";
-                            renderChapter(content, chapter.body);
-                            const closeBtn =
-                                content.querySelector(".close-chapter-btn");
-                            if (closeBtn) {
-                                closeBtn.onclick = () => closeChapter(index);
-                            }
-                            container.appendChild(summary);
-                            container.appendChild(content);
-                            readingContent.prepend(container);
-                            openChapters.set(index, container);
-                            let saved = JSON.parse(
-                                localStorage.getItem(STORAGE_KEY) || "[]",
-                            );
-                            if (!saved.includes(index)) {
-                                saved.push(index);
-                                localStorage.setItem(
-                                    STORAGE_KEY,
-                                    JSON.stringify(saved),
-                                );
-                            }
-                            const ph = createPlaceholder(index);
-                            placeholders.set(index, ph);
-                            const el = folderContent.querySelector(
-                                `[data-index="${index}"]`,
-                            );
-                            if (el) {
-                                folderContent.replaceChild(ph, el);
-                            }
-                        }
-                        function closeChapter(index) {
-                            const container = openChapters.get(index);
-                            if (!container) return;
-                            container.remove();
-                            openChapters.delete(index);
-                            placeholders.delete(index);
-                            let saved = JSON.parse(
-                                localStorage.getItem(STORAGE_KEY) || "[]",
-                            );
-                            saved = saved.filter((i) => i !== index);
-                            localStorage.setItem(
-                                STORAGE_KEY,
-                                JSON.stringify(saved),
-                            );
-                            renderVisible();
-                        }
-                        function createChapterItem(index) {
-                            const chapter = chapters[index];
-                            const details = document.createElement("details");
-                            details.dataset.index = index;
-                            const summary = document.createElement("summary");
-                            summary.textContent = chapter.title;
-                            summary.onclick = (e) => {
-                                e.preventDefault();
-                                openChapter(index);
-                            };
-                            details.appendChild(summary);
-                            return details;
-                        }
-                        function renderVisible() {
-                            folderContent.innerHTML = "";
-                            const from = startIndex;
-                            const to = Math.min(
-                                chapters.length,
-                                startIndex + RENDER,
-                            );
-                            const top = document.createElement("div");
-                            top.className = "vs-spacer";
-                            top.style.height = from * ITEM_HEIGHT + "px";
-                            folderContent.appendChild(top);
-                            for (let i = from; i < to; i++) {
-                                if (placeholders.has(i)) {
-                                    folderContent.appendChild(
-                                        placeholders.get(i),
-                                    );
-                                    continue;
-                                }
-                                folderContent.appendChild(createChapterItem(i));
-                            }
-                            const bottom = document.createElement("div");
-                            bottom.className = "vs-spacer";
-                            bottom.style.height =
-                                (chapters.length - to) * ITEM_HEIGHT + "px";
-                            folderContent.appendChild(bottom);
-                        }
-                        folderContent.addEventListener("scroll", () => {
-                            const scrollTop = folderContent.scrollTop;
-                            const newIndex = Math.floor(
-                                scrollTop / ITEM_HEIGHT,
-                            );
-                            if (newIndex !== startIndex) {
-                                startIndex = newIndex;
-                                renderVisible();
-                            }
-                        });
-                        renderVisible();
-                        requestAnimationFrame(() => {
-                            let saved = JSON.parse(
-                                localStorage.getItem(STORAGE_KEY) || "[]",
-                            );
-                            saved.forEach((index) => {
-                                if (index >= 0 && index < chapters.length) {
-                                    openChapter(index);
-                                }
-                            });
-                        });
-                    }
-                    if (chapterToScroll) {
-                        setTimeout(() => {
-                            chapterToScroll.scrollIntoView({
-                                behavior: "smooth",
-                                block: "start",
-                            });
-                        }, 300);
-                    }
-                    const readerArea = document.createElement("div");
-                    const readingDetails = document.createElement("details");
-                    const readingContent = document.createElement("div");
-                    readerArea.id = "reader-area";
-                    readingDetails.classList.add("slide-item");
-                    const readingSummary = document.createElement("summary");
-                    readingSummary.textContent = "Danh sách chương đang đọc";
-                    readingContent.className = "content";
-                    readingDetails.appendChild(readingSummary);
-                    readingDetails.appendChild(readingContent);
-                    enableDetailsAnimation(readingDetails);
-                    readerArea.appendChild(readingDetails);
-                    app.appendChild(readerArea);
-                    requestAnimationFrame(() => {
-                        readingDetails.classList.add("show");
-                    });
-                }
-            });
-            function wrapSlideItems() {
-                const chuy = document.getElementById("chuy");
-                if (chuy && !chuy.dataset.wrapped) {
-                    chuy.dataset.wrapped = "1";
-                    [...chuy.children].forEach((el) => {
-                        const wrapper = document.createElement("div");
-                        wrapper.className = "slide-item show";
-                        wrapper.appendChild(el);
-                        chuy.appendChild(wrapper);
-                    });
-                }
-                document
-                    .querySelectorAll("#app > details")
-                    .forEach((details) => {
-                        if (details.dataset.wrapped) return;
-                        details.dataset.wrapped = "1";
-                        const wrapper = document.createElement("div");
-                        wrapper.className = "slide-item show";
-                        details.parentNode.insertBefore(wrapper, details);
-                        wrapper.appendChild(details);
-                    });
-            }
-            clearBtn.addEventListener("click", () => {
-                slideOutDetails();
-                showIntro();
-                fileInput.value = "";
-                app.textContent = "";
-                status.textContent = "";
-                history.replaceState(null, "", location.pathname);
-                app.classList.remove("fade-in");
-                document.querySelector("h2").style.display = "block";
-                document.getElementById("chuy").style.display = "block";
-                clearBtn.style.display = "none";
-            });
-        </script>
-        <script id="introscr">
-            function wrapLines(container) {
-                const elements = [...container.children];
-                container.innerHTML = "";
-                elements.forEach((el) => {
-                    const wrapper = document.createElement("div");
-                    wrapper.className = "fade-line";
-                    wrapper.appendChild(el);
-                    container.appendChild(wrapper);
-                });
-            }
-            function hideIntro() {
-                const intro = document.getElementById("chuy");
-                const title = document.querySelector("h2");
-                const blocks = [title, ...intro.querySelectorAll(".fade-line")];
-                blocks.forEach((el, i) => {
-                    setTimeout(() => {
-                        el.classList.remove("show");
-                        el.classList.add("exit");
-                    }, i * 90);
-                });
-                setTimeout(
-                    () => {
-                        title.style.display = "none";
-                        intro.style.display = "none";
-                    },
-                    blocks.length * 90 + 600,
-                );
-            }
-            function showIntro() {
-                const intro = document.getElementById("chuy");
-                const title = document.querySelector("h2");
-                title.style.display = "block";
-                intro.style.display = "block";
-                const blocks = [title, ...intro.querySelectorAll(".fade-line")];
-                blocks.forEach((el) => {
-                    el.classList.remove("exit", "show");
-                    el.style.transform = "translateX(120px)";
-                    el.style.opacity = "0";
-                });
-                blocks.forEach((el, i) => {
-                    setTimeout(() => {
-                        el.classList.add("show");
-                        el.style.transform = "";
-                        el.style.opacity = "";
-                    }, i * 90);
-                });
-            }
-            wrapLines(document.getElementById("chuy"));
-            document.querySelector("h2").classList.add("fade-line", "show");
-            document
-                .querySelectorAll("#chuy .fade-line")
-                .forEach((el) => el.classList.add("show"));
-        </script>
-        <script>
-            window.addEventListener("DOMContentLoaded", () => {
-                const title = document.querySelector("h2");
-                const intro = document.getElementById("chuy");
-                title.classList.remove("show");
-                title.style.opacity = "0";
-                title.style.transform = "translateX(120px)";
-                intro.querySelectorAll(".fade-line").forEach((el) => {
-                    el.classList.remove("show");
-                    el.style.opacity = "0";
-                    el.style.transform = "translateX(120px)";
-                });
-                setTimeout(() => {
-                    showIntro();
-                }, 120);
-            });
-        </script>
-        <script id="loadscr">
-            function wrapAppDetails() {
-                document
-                    .querySelectorAll("#app > details")
-                    .forEach((details) => {
-                        if (details.dataset.slideWrapped) return;
-                        details.dataset.slideWrapped = "1";
-                        const wrapper = document.createElement("div");
-                        wrapper.className = "slide-item";
-                        details.parentNode.insertBefore(wrapper, details);
-                        wrapper.appendChild(details);
-                    });
-            }
-            function slideInDetails() {
-                wrapAppDetails();
-                document
-                    .querySelectorAll("#app .slide-item")
-                    .forEach((el, i) => {
-                        el.classList.remove("exit", "show");
-                        el.style.transform = "translateX(120px)";
-                        el.style.opacity = "0";
-                        setTimeout(() => {
-                            el.classList.add("show");
-                            el.style.transform = "";
-                            el.style.opacity = "";
-                        }, i * 80);
-                    });
-            }
-            function slideOutDetails() {
-                document
-                    .querySelectorAll("#app .slide-item")
-                    .forEach((el, i) => {
-                        setTimeout(() => {
-                            el.classList.remove("show");
-                            el.classList.add("exit");
-                        }, i * 70);
-                    });
-            }
-        </script>
-        <script id="themescr">
-            const select = document.getElementById("themeSelect");
-            const saved = localStorage.getItem("reader-theme");
-            if (saved) {
-                document.body.className = saved;
-                select.value = saved;
-            }
-            select.addEventListener("change", () => {
-                document.body.className = "";
-                const theme = select.value;
-                if (theme) {
-                    document.body.classList.add(theme);
-                    localStorage.setItem("reader-theme", theme);
-                } else {
-                    localStorage.removeItem("reader-theme");
-                }
-            });
-        </script>
-        <script id="bmscr">
-            const STORY_BOOKMARK_KEY = "story-last-chapters";
-            function getStoryTitle() {
-                const h1 = document.querySelector("#app h1");
-                if (!h1) return null;
-                return h1.textContent.trim();
-            }
-            function loadStoryBookmarks() {
-                const raw = localStorage.getItem(STORY_BOOKMARK_KEY);
-                return raw ? JSON.parse(raw) : {};
-            }
-            function saveStoryBookmarks(data) {
-                localStorage.setItem(STORY_BOOKMARK_KEY, JSON.stringify(data));
-            }
-            function saveCurrentChapter(index) {
-                const title = getStoryTitle();
-                if (!title) return;
-                const data = loadStoryBookmarks();
-                data[title] = index;
-                saveStoryBookmarks(data);
-            }
-            function getSavedChapter() {
-                const title = getStoryTitle();
-                if (!title) return null;
-                const data = loadStoryBookmarks();
-                return data[title] ?? null;
-            }
-        </script>
-        <script id="slugcr">
-            (function () {
-                function slugify(text) {
-                    return text
-                        .normalize("NFC")
-                        .trim()
-                        .replace(/\s+/g, "-")
-                        .replace(/-+/g, "-");
-                }
-                function getCurrentSlug() {
-                    if (!location.hash) return "";
-                    return decodeURIComponent(location.hash.slice(1));
-                }
-                function cleanUrlAndReload() {
-                    history.replaceState(null, "", location.pathname);
-                    location.reload();
-                }
-                function syncUrlWithTitle() {
-                    const h1 = document.querySelector("#app h1");
-                    if (!h1) return;
-                    const realSlug = slugify(h1.textContent.trim());
-                    const currentSlug = getCurrentSlug();
-                    if (!currentSlug) {
-                        history.replaceState(
-                            null,
-                            "",
-                            location.pathname +
-                                "#" +
-                                encodeURIComponent(realSlug),
-                        );
-                        return;
-                    }
-                    if (currentSlug !== realSlug) {
-                        cleanUrlAndReload();
-                    }
-                }
-                function waitForTitleAndSync() {
-                    const observer = new MutationObserver(() => {
-                        const h1 = document.querySelector("#app h1");
-                        if (!h1) return;
-                        observer.disconnect();
-                        syncUrlWithTitle();
-                    });
-                    observer.observe(document.body, {
-                        childList: true,
-                        subtree: true,
-                    });
-                }
-                window.addEventListener("DOMContentLoaded", () => {
-                    waitForTitleAndSync();
-                    window.addEventListener("hashchange", () => {
-                        syncUrlWithTitle();
-                    });
-                });
-            })();
-        </script>
+        <script src="mdtrender.js"></script>
         <script src="../i18n-2.js"></script>
-        <footer style="text-align: center">
-            Máy Đọc Truyện by TzhouSensei
-        </footer>
+        <script src="introscr.js"></script>
+        <script src="loadscr.js"></script>
+        <script src="themescr.js"></script>
+        <script src="bmscr.js"></script>
+        <script src="slugcr.js"></script>
+        <footer style="text-align: center" data-i18n="footer.mdt"></footer>
     </body>
 </html>

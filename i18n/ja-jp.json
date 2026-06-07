@@ -35,6 +35,8 @@
 
     "import.txt.notify": ".txtファイルをインポート",
     "subtitle.editor": "📖 エディター",
+    "subtitle.reader": "📖 小説リーダー",
+    "footer.mdt": "TzhouSenseiの小説リーダー",
 
     "note.1": ".txtファイルをインポートする際は、以下の構造に従ってください：",
 

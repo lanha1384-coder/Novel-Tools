@@ -35,6 +35,8 @@
 
     "import.txt.notify": "Impor file .txt",
     "subtitle.editor": "📖 EDITOR",
+    "subtitle.reader": "📖 Pembaca Cerita",
+    "footer.mdt": "Pembaca Cerita oleh TzhouSensei",
 
     "note.1": "Saat mengimpor file .txt, konten harus mengikuti struktur berikut:",
 

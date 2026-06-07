@@ -35,6 +35,8 @@
 
     "import.txt.notify": "Import a .txt file",
     "subtitle.editor": "📖 EDITOR",
+    "subtitle.reader": "📖 READER",
+    "footer.mdt": "Story Reader by TzhouSensei",
 
     "note.1": "When importing a .txt file, the content must follow this structure:",
 

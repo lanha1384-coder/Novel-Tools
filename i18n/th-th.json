@@ -35,6 +35,8 @@
 
     "import.txt.notify": "นำเข้าไฟล์ .txt",
     "subtitle.editor": "📖 ตัวแก้ไข",
+    "subtitle.reader": "📖 เครื่องอ่านนิยาย",
+    "footer.mdt": "เครื่องอ่านนิยาย โดย TzhouSensei",
 
     "note.1": "เมื่อคุณนำเข้าไฟล์ .txt เนื้อหาต้องเป็นไปตามโครงสร้างดังนี้:",
 

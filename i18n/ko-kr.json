@@ -35,6 +35,8 @@
 
     "import.txt.notify": ".txt 파일 가져오기",
     "subtitle.editor": "📖 에디터",
+    "subtitle.reader": "📖 소설 리더",
+    "footer.mdt": "TzhouSensei의 소설 리더",
 
     "note.1": ".txt 파일을 가져올 때는 다음 구조를 따라야 합니다:",
 

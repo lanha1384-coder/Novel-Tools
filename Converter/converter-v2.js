@@ -67,6 +67,19 @@ const wrapDisplayText = (text, maxWidth = 80) => {
 const splitterBox = document.createElement("div");
 splitterBox.style.margin = "10px 0";
 
+const splitterLength = document.createElement("input");
+
+splitterLength.type = "number";
+splitterLength.min = "1";
+splitterLength.value = "11";
+
+splitterLength.style.marginLeft = "15px";
+splitterLength.style.width = "80px";
+
+const splitterLengthLabel = document.createElement("label");
+splitterLengthLabel.textContent = " Width: ";
+splitterLengthLabel.appendChild(splitterLength);
+
 const splitterOptions = [
     { label: "Dash (-----)", value: "dash" },
     { label: "Equal (=====)", value: "equal" },
@@ -89,23 +102,40 @@ splitterOptions.forEach((opt) => {
 
     splitterBox.appendChild(label);
 });
+splitterBox.appendChild(splitterLengthLabel);
 
 fileInput.parentNode.insertBefore(splitterBox, btn);
 
 const getSplitter = () => {
     const selected = document.querySelector("input[name='splitter']:checked");
 
+    let width = parseInt(splitterLength.value, 10);
+
+    if (isNaN(width)) {
+        width = 11;
+    }
+
     switch (selected?.value) {
         case "dash":
-            return "\n-----------\n";
+            width = Math.max(3, width);
+            return "\n" + "-".repeat(width) + "\n\n";
+
         case "equal":
-            return "\n===========\n";
+            width = Math.max(3, width);
+            return "\n" + "=".repeat(width) + "\n\n";
+
         case "star":
-            return "\n***********\n";
+            width = Math.max(3, width);
+            return "\n" + "*".repeat(width) + "\n\n";
+
         case "wave":
-            return "\n~~~~~~~~~~~\n";
+            width = Math.max(3, width);
+            return "\n" + "~".repeat(width) + "\n\n";
+
         case "box":
-            return "\n*========*\n";
+            width = Math.max(1, width);
+            return "\n*" + "=".repeat(width - 2) + "*\n\n";
+
         default:
             return "\n\n\n";
     }
@@ -193,12 +223,6 @@ fileInput.addEventListener("change", async (e) => {
 
         const normalized = text.toLowerCase();
 
-        const blacklist = [title, creator, description, genre]
-            .filter(Boolean)
-            .map((s) => s.toLowerCase());
-
-        if (blacklist.some((b) => b && normalized.includes(b))) return true;
-
         const tocSignals = ["table of contents", "mục lục", "contents"];
         const tocHits = tocSignals.filter((s) => normalized.includes(s)).length;
         if (tocHits >= 2 && text.length < 3000) return true;
@@ -260,7 +284,7 @@ fileInput.addEventListener("change", async (e) => {
         const html = await file.async("string");
         const doc = parser.parseFromString(html, "text/html");
 
-        const headings = [...doc.querySelectorAll("h1, h2")]
+        const headings = [...doc.querySelectorAll("h1,h2,h3,h4,h5,h6")]
             .map((el) => el.textContent?.trim())
             .filter(Boolean);
 
@@ -268,7 +292,7 @@ fileInput.addEventListener("change", async (e) => {
             headings.find((t) => t.length < 120) ||
             doc.title?.trim() ||
             `${t("chapter")} ${i + 1}`;
-        doc.querySelectorAll("h1, h2").forEach((el) => el.remove());
+        doc.querySelectorAll("h1,h2,h3,h4,h5,h6").forEach((el) => el.remove());
 
         const text = stripHTML(doc.body?.innerHTML || "")
             .split("\n")
@@ -342,7 +366,7 @@ fileInput.addEventListener("change", async (e) => {
         makeInfoBox(
             `${t("author")}: ${creator} | ${t("genre")}: ${genre} | ${t("chapter.count")}: ${spine.length}\n\n${t("description")}:\n${finalDescription}`,
         ) +
-        `\n\n` +
+        `\n{{SPLITTER}}` +
         chaptersTxt;
     renderOutput();
     btn.style.display = "inline-block";
@@ -354,6 +378,7 @@ const renderOutput = () => {
 };
 
 splitterBox.addEventListener("change", renderOutput);
+splitterLength.addEventListener("input", renderOutput);
 
 btn.addEventListener("click", () => {
     const blob = new Blob([output.value], {

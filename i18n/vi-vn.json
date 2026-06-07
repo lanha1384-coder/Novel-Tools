@@ -35,6 +35,8 @@
 
     "import.txt.notify": "Đưa file .txt vào",
     "subtitle.editor": "📖 EDITOR",
+    "subtitle.reader": "📖 Máy Đọc Truyện",
+    "footer.mdt": "Máy Đọc Truyện của TzhouSensei",
 
     "note.1": "Khi import file .txt, nội dung bắt buộc phải tuân theo cấu trúc sau:",
 

@@ -8,9 +8,12 @@
     let isDragging = false;
     let dragStartX, dragStartY, boxStartX, boxStartY;
 
-    const APP_DIV = document.getElementById("app");
     const STORAGE_KEY_FIND = "fnr_history_find";
     const STORAGE_KEY_REPLACE = "fnr_history_replace";
+
+    let globalMouseMoveHandler = null;
+    let globalMouseUpHandler = null;
+    let globalClickHandler = null;
 
     function loadHistory() {
         try {
@@ -37,26 +40,147 @@
         updateHistoryDropdown(type);
     }
 
+    // YÊU CẦU 1: Xuất lịch sử tìm kiếm dưới dạng file JSON cấu trúc {"find": "replace"}
+    function exportHistoryJSON() {
+        let exportObj = {};
+        history.find.forEach((findVal, index) => {
+            if (findVal) {
+                let replaceVal = history.replace[index];
+                exportObj[findVal] =
+                    replaceVal !== undefined && replaceVal !== null
+                        ? replaceVal
+                        : "";
+            }
+        });
+
+        const dataStr =
+            "data:text/json;charset=utf-8," +
+            encodeURIComponent(JSON.stringify(exportObj, null, 4));
+        const downloadAnchor = document.createElement("a");
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "fnr_history.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    // YÊU CẦU 2: Nhập dữ liệu từ file JSON hỗ trợ Overwrite và Add (Xử lý trùng lặp)
+    function importHistoryJSON(fileEvent) {
+        const file = fileEvent.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (
+                    typeof importedData !== "object" ||
+                    importedData === null ||
+                    Array.isArray(importedData)
+                ) {
+                    alert("Định dạng file JSON không hợp lệ!");
+                    return;
+                }
+
+                // Lựa chọn Mode Import bằng hộp thoại xác nhận trực quan
+                const modeChoice = window.confirm(
+                    "Bấm [OK] để chọn chế độ OVERWRITE (Xoá toàn bộ lịch sử cũ).\nBấm [Cancel] để chọn chế độ ADD (Chỉ thêm mới hoặc cập nhật).",
+                );
+
+                if (modeChoice) {
+                    // CHẾ ĐỘ OVERWRITE
+                    history.find = [];
+                    history.replace = [];
+                    for (const [findVal, replaceVal] of Object.entries(
+                        importedData,
+                    )) {
+                        if (findVal) {
+                            history.find.push(findVal);
+                            history.replace.push(replaceVal || "");
+                        }
+                    }
+                } else {
+                    // CHẾ ĐỘ ADD
+                    let askDuplicate = true;
+                    let overwriteAllDuplicates = false;
+
+                    for (const [findVal, replaceVal] of Object.entries(
+                        importedData,
+                    )) {
+                        if (!findVal) continue;
+
+                        const existingIndex = history.find.indexOf(findVal);
+                        const cleanReplaceVal = replaceVal || "";
+
+                        if (existingIndex !== -1) {
+                            // Xử lý khi phát hiện trùng dòng cũ
+                            if (askDuplicate) {
+                                const confirmOverwrite = window.confirm(
+                                    `Phát hiện từ khoá trùng lặp: "${findVal}"\n\nBấm [OK] để Ghi đè (Overwrite) giá trị mới.\nBấm [Cancel] để Giữ nguyên (Keep) giá trị cũ.`,
+                                );
+                                overwriteAllDuplicates = confirmOverwrite;
+                                // Nếu muốn tối ưu không hỏi lại nhiều lần, có thể bỏ comment dòng dưới:
+                                // askDuplicate = false;
+                            }
+                            if (overwriteAllDuplicates) {
+                                history.replace[existingIndex] =
+                                    cleanReplaceVal;
+                            }
+                        } else {
+                            // Nếu chưa có thì chèn thẳng vào đầu danh sách
+                            history.find.unshift(findVal);
+                            history.replace.unshift(cleanReplaceVal);
+                        }
+                    }
+                }
+
+                // Giới hạn dung lượng lưu trữ tối đa 50 phần tử
+                if (history.find.length > 50)
+                    history.find = history.find.slice(0, 50);
+                if (history.replace.length > 50)
+                    history.replace = history.replace.slice(0, 50);
+
+                // Lưu lại vào bộ nhớ trình duyệt và cập nhật UI
+                localStorage.setItem(
+                    STORAGE_KEY_FIND,
+                    JSON.stringify(history.find),
+                );
+                localStorage.setItem(
+                    STORAGE_KEY_REPLACE,
+                    JSON.stringify(history.replace),
+                );
+                updateHistoryDropdown("find");
+                updateHistoryDropdown("replace");
+                alert("Đã nhập dữ liệu lịch sử thành công!");
+            } catch (err) {
+                alert("Lỗi khi đọc file JSON: " + err.message);
+            }
+        };
+        reader.readAsText(file);
+        fileEvent.target.value = ""; // Reset input file để có thể chọn lại cùng 1 file
+    }
+
     function saveStateForUndo() {
-        if (!APP_DIV) return;
         if (undoStack.length >= 30) undoStack.shift();
-        undoStack.push(APP_DIV.innerHTML);
+        undoStack.push(JSON.stringify(STORY_DATA));
         redoStack = [];
     }
 
     function performUndo() {
-        if (undoStack.length === 0 || !APP_DIV) return;
-        redoStack.push(APP_DIV.innerHTML);
-        APP_DIV.innerHTML = undoStack.pop();
-        clearMatches();
+        if (undoStack.length === 0) return;
+        redoStack.push(JSON.stringify(STORY_DATA));
+        STORY_DATA = JSON.parse(undoStack.pop());
+        if (typeof buildSearchIndex === "function") buildSearchIndex();
+        if (typeof renderStory === "function") renderStory();
         findMatches();
     }
 
     function performRedo() {
-        if (redoStack.length === 0 || !APP_DIV) return;
-        undoStack.push(APP_DIV.innerHTML);
-        APP_DIV.innerHTML = redoStack.pop();
-        clearMatches();
+        if (redoStack.length === 0) return;
+        undoStack.push(JSON.stringify(STORY_DATA));
+        STORY_DATA = JSON.parse(redoStack.pop());
+        if (typeof buildSearchIndex === "function") buildSearchIndex();
+        if (typeof renderStory === "function") renderStory();
         findMatches();
     }
 
@@ -86,8 +210,7 @@
             .fnr-btn-secondary { background: #3a3a3a; color: #cccccc; }
             .fnr-btn-secondary:hover { background: #4a4a4a; }
             .fnr-counter { font-size: 11px; color: #858585; min-width: 40px; text-align: right; margin-right: 4px; }
-            .fnr-match-hl { background-color: rgba(157, 180, 252, 0.3); border: 1px solid rgba(157, 180, 252, 0.5); border-radius: 1px; display: inline; }
-            .fnr-match-hl-active { background-color: rgba(245, 124, 0, 0.6) !important; border: 1px solid #f57c00 !important; }
+            .fnr-divider { height: 1px; background: #454545; margin: 4px 0; }
         `;
         document.head.appendChild(style);
     }
@@ -100,83 +223,58 @@
         box = document.createElement("div");
         box.className = "fnr-box";
         box.innerHTML = `
-    <div class="fnr-header">
-        <span data-i18n="edit.title"></span>
-        <span style="cursor:pointer;" id="fnr-close-x">×</span>
-    </div>
-
-    <div class="fnr-body">
-
-        <div class="fnr-row">
-            <div class="fnr-input-wrapper">
-                <input type="text" id="fnr-find-input" class="fnr-input" placeholder="Find">
-                <button class="fnr-dropdown-btn" id="fnr-find-drop-btn">▼</button>
-                <div class="fnr-select-list" id="fnr-find-list"></div>
+            <div class="fnr-header">
+                <span data-i18n="edit.title">Find & Replace</span>
+                <span style="cursor:pointer;" id="fnr-close-x">×</span>
             </div>
-
-            <div class="fnr-counter" id="fnr-match-counter">0/0</div>
-
-            <button class="fnr-btn fnr-btn-secondary"
-                style="min-width:30px;padding:4px;"
-                id="fnr-prev-btn"
-                data-i18n="edit.opt.prev">
-            </button>
-
-            <button class="fnr-btn fnr-btn-secondary"
-                style="min-width:30px;padding:4px;"
-                id="fnr-next-btn"
-                data-i18n="edit.opt.next">
-            </button>
-        </div>
-
-        <div class="fnr-row">
-            <div class="fnr-input-wrapper">
-                <input type="text" id="fnr-replace-input" class="fnr-input" placeholder="Replace">
-                <button class="fnr-dropdown-btn" id="fnr-replace-drop-btn">▼</button>
-                <div class="fnr-select-list" id="fnr-replace-list"></div>
+            <div class="fnr-body">
+                <div class="fnr-row">
+                    <div class="fnr-input-wrapper">
+                        <input type="text" id="fnr-find-input" class="fnr-input" placeholder="Find">
+                        <button class="fnr-dropdown-btn" id="fnr-find-drop-btn">▼</button>
+                        <div class="fnr-select-list" id="fnr-find-list"></div>
+                    </div>
+                    <div class="fnr-counter" id="fnr-match-counter">0/0</div>
+                    <button class="fnr-btn fnr-btn-secondary" style="min-width:30px;padding:4px;" id="fnr-prev-btn" data-i18n="edit.opt.prev">◀</button>
+                    <button class="fnr-btn fnr-btn-secondary" style="min-width:30px;padding:4px;" id="fnr-next-btn" data-i18n="edit.opt.next">▶</button>
+                </div>
+                <div class="fnr-row">
+                    <div class="fnr-input-wrapper">
+                        <input type="text" id="fnr-replace-input" class="fnr-input" placeholder="Replace">
+                        <button class="fnr-dropdown-btn" id="fnr-replace-drop-btn">▼</button>
+                        <div class="fnr-select-list" id="fnr-replace-list"></div>
+                    </div>
+                </div>
+                <div class="fnr-radio-group">
+                    <label class="fnr-radio-label">
+                        <input type="radio" name="fnr-mode" value="all" checked>
+                        <span data-i18n="edit.opt.match.all">Match Whole</span>
+                    </label>
+                    <label class="fnr-radio-label">
+                        <input type="radio" name="fnr-mode" value="around">
+                        <span data-i18n="edit.opt.match.around">Match Partial</span>
+                    </label>
+                    <label class="fnr-radio-label">
+                        <input type="radio" name="fnr-mode" value="regex">
+                        <span data-i18n="edit.opt.regex">Regex</span>
+                    </label>
+                </div>
+                <div class="fnr-btn-group">
+                    <button class="fnr-btn" id="fnr-replace-btn" data-i18n="edit.opt.replace">Replace</button>
+                    <button class="fnr-btn" id="fnr-replace-all-btn" data-i18n="edit.opt.replace.all">All</button>
+                    <button class="fnr-btn fnr-btn-secondary" id="fnr-cancel-btn" data-i18n="edit.opt.cancel">Cancel</button>
+                </div>
+                <div class="fnr-divider"></div>
+                <div class="fnr-btn-group" style="justify-content: flex-start; gap: 6px;">
+                    <button class="fnr-btn fnr-btn-secondary" id="fnr-export-btn">Export JSON</button>
+                    <button class="fnr-btn fnr-btn-secondary" id="fnr-import-btn">Import JSON</button>
+                    <input type="file" id="fnr-file-input" accept=".json" style="display: none;" />
+                </div>
             </div>
-        </div>
-
-        <div class="fnr-radio-group">
-            <label class="fnr-radio-label">
-                <input type="radio" name="fnr-mode" value="all" checked>
-                <span data-i18n="edit.opt.match.all"></span>
-            </label>
-
-            <label class="fnr-radio-label">
-                <input type="radio" name="fnr-mode" value="around">
-                <span data-i18n="edit.opt.match.around"></span>
-            </label>
-
-            <label class="fnr-radio-label">
-                <input type="radio" name="fnr-mode" value="regex">
-                <span data-i18n="edit.opt.regex"></span>
-            </label>
-        </div>
-
-        <div class="fnr-btn-group">
-            <button class="fnr-btn"
-                id="fnr-replace-btn"
-                data-i18n="edit.opt.replace">
-            </button>
-
-            <button class="fnr-btn"
-                id="fnr-replace-all-btn"
-                data-i18n="edit.opt.replace.all">
-            </button>
-
-            <button class="fnr-btn fnr-btn-secondary"
-                id="fnr-cancel-btn"
-                data-i18n="edit.opt.cancel">
-            </button>
-        </div>
-
-    </div>
-`;
-
+        `;
         document.body.appendChild(box);
         initEvents();
-        applyI18n(box);
+        if (typeof applyI18n === "function") applyI18n(box);
         updateHistoryDropdown("find");
         updateHistoryDropdown("replace");
         document.getElementById("fnr-find-input").focus();
@@ -202,122 +300,113 @@
 
     function closeBox() {
         if (!box) return;
-        clearMatches();
+
+        if (globalMouseMoveHandler)
+            document.removeEventListener("mousemove", globalMouseMoveHandler);
+        if (globalMouseUpHandler)
+            document.removeEventListener("mouseup", globalMouseUpHandler);
+        if (globalClickHandler)
+            document.removeEventListener("click", globalClickHandler);
+
         box.remove();
         box = null;
+        matches = [];
+        currentMatchIndex = -1;
     }
 
     function getSearchRegex(text, mode) {
         if (!text) return null;
         try {
-            if (mode === "regex") {
-                return new RegExp(text, "g");
-            } else if (mode === "all") {
-                let escaped = text.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-                return new RegExp("\\b" + escaped + "\\b", "g");
-            } else if (mode === "around") {
-                let chess = text.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-                return new RegExp(chess, "gi");
-            }
+            if (mode === "regex") return new RegExp(text, "g");
+            let escaped = text.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+            if (mode === "all") return new RegExp("\\b" + escaped + "\\b", "g");
+            if (mode === "around") return new RegExp(escaped, "gi");
         } catch (e) {
             return null;
         }
         return null;
     }
 
-    function clearMatches() {
-        if (!APP_DIV) return;
-        const highlighted = APP_DIV.querySelectorAll(".fnr-match-hl");
-        highlighted.forEach((el) => {
-            const parent = el.parentNode;
-            if (parent) {
-                parent.replaceChild(
-                    document.createTextNode(el.textContent),
-                    el,
-                );
-                parent.normalize();
-            }
-        });
-        matches = [];
-        currentMatchIndex = -1;
-        updateCounter();
-    }
-
     function findMatches() {
-        if (!APP_DIV || !box) return;
-        clearMatches();
-
+        if (!box) return;
+        matches = [];
         const findValue = document.getElementById("fnr-find-input").value;
-        if (!findValue) return;
-
+        if (!findValue) {
+            currentMatchIndex = -1;
+            updateCounter();
+            return;
+        }
         const mode = box.querySelector('input[name="fnr-mode"]:checked').value;
         const regex = getSearchRegex(findValue, mode);
         if (!regex) return;
 
-        function highlightNodes(node) {
-            if (node.nodeType === 3) {
-                const text = node.nodeValue;
-                let match;
-                const fragments = [];
-                let lastIndex = 0;
+        if (typeof buildSearchIndex === "function") buildSearchIndex();
 
+        if (
+            typeof SEARCH_INDEX !== "undefined" &&
+            Array.isArray(SEARCH_INDEX)
+        ) {
+            SEARCH_INDEX.forEach((item) => {
+                const text = item.getText();
+                let match;
+                regex.lastIndex = 0;
                 while ((match = regex.exec(text)) !== null) {
                     if (match.index === regex.lastIndex) regex.lastIndex++;
-
-                    fragments.push(
-                        document.createTextNode(
-                            text.substring(lastIndex, match.index),
-                        ),
-                    );
-
-                    const span = document.createElement("span");
-                    span.className = "fnr-match-hl";
-                    span.textContent = match[0];
-                    fragments.push(span);
-
-                    lastIndex = regex.lastIndex;
+                    matches.push({
+                        searchItem: item,
+                        start: match.index,
+                        end: regex.lastIndex,
+                        matchedText: match[0],
+                    });
                 }
-
-                if (fragments.length > 0) {
-                    fragments.push(
-                        document.createTextNode(text.substring(lastIndex)),
-                    );
-                    const parent = node.parentNode;
-                    fragments.forEach((frag) =>
-                        parent.insertBefore(frag, node),
-                    );
-                    parent.removeChild(node);
-                }
-            } else if (
-                node.nodeType === 1 &&
-                node.childNodes &&
-                !node.classList.contains("fnr-match-hl") &&
-                node.id !== "fnr-box"
-            ) {
-                for (let i = node.childNodes.length - 1; i >= 0; i--) {
-                    highlightNodes(node.childNodes[i]);
-                }
-            }
+            });
         }
 
-        highlightNodes(APP_DIV);
-        matches = Array.from(APP_DIV.querySelectorAll(".fnr-match-hl"));
         if (matches.length > 0) {
-            currentMatchIndex = 0;
-            highlightActiveMatch();
+            if (
+                currentMatchIndex === -1 ||
+                currentMatchIndex >= matches.length
+            ) {
+                currentMatchIndex = 0;
+            }
+            focusMatchOnUI();
+        } else {
+            currentMatchIndex = -1;
         }
         updateCounter();
     }
 
-    function highlightActiveMatch() {
-        matches.forEach((el, index) => {
-            if (index === currentMatchIndex) {
-                el.classList.add("fnr-match-hl-active");
-                el.scrollIntoView({ behavior: "smooth", block: "center" });
-            } else {
-                el.classList.remove("fnr-match-hl-active");
+    function focusMatchOnUI() {
+        if (currentMatchIndex === -1 || matches.length === 0) return;
+        const currentMatch = matches[currentMatchIndex];
+        const type = currentMatch.searchItem.type;
+        const index = currentMatch.searchItem.index;
+        let selector = "";
+
+        if (type === "title") selector = "h1, .story-title, #story-title";
+        else if (type === "description") selector = "details:nth-of-type(1)";
+        else if (type === "characters") selector = "details:nth-of-type(2)";
+        else if (type === "chapter-title" || type === "chapter-body") {
+            selector = `details[data-index="${index}"]`;
+        }
+
+        if (selector) {
+            const detailsEl =
+                document.querySelector(`#app ${selector}`) ||
+                document.querySelector(selector);
+            if (detailsEl) {
+                if (detailsEl.tagName === "DETAILS") {
+                    detailsEl.open = true;
+                    const parentDetails =
+                        detailsEl.parentElement.closest("details");
+                    if (parentDetails) parentDetails.open = true;
+                }
+                detailsEl.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                });
             }
-        });
+        }
     }
 
     function updateCounter() {
@@ -338,41 +427,73 @@
             currentMatchIndex =
                 (currentMatchIndex - 1 + matches.length) % matches.length;
         }
-        highlightActiveMatch();
+        focusMatchOnUI();
         updateCounter();
     }
 
     function replaceSingle() {
         if (currentMatchIndex === -1 || matches.length === 0) return;
-        saveStateForUndo();
+        if (typeof STORY_DATA === "undefined") return;
 
+        saveStateForUndo();
         const replaceValue = document.getElementById("fnr-replace-input").value;
         const findValue = document.getElementById("fnr-find-input").value;
         saveHistory("find", findValue);
         saveHistory("replace", replaceValue);
 
-        const currentEl = matches[currentMatchIndex];
-        const parent = currentEl.parentNode;
-        if (parent) {
-            const textNode = document.createTextNode(replaceValue);
-            parent.replaceChild(textNode, currentEl);
-            parent.normalize();
+        const match = matches[currentMatchIndex];
+        const item = match.searchItem;
+
+        if (item.type === "title") {
+            STORY_DATA.title = modifyString(
+                STORY_DATA.title,
+                match.start,
+                match.end,
+                replaceValue,
+            );
+        } else if (item.type === "description") {
+            STORY_DATA.description = modifyString(
+                STORY_DATA.description,
+                match.start,
+                match.end,
+                replaceValue,
+            );
+        } else if (item.type === "characters") {
+            let fullText = STORY_DATA.characters.join("\n");
+            fullText = modifyString(
+                fullText,
+                match.start,
+                match.end,
+                replaceValue,
+            );
+            STORY_DATA.characters = fullText.split("\n");
+        } else if (item.type === "chapter-title") {
+            item.ref.title = modifyString(
+                item.ref.title,
+                match.start,
+                match.end,
+                replaceValue,
+            );
+            item.ref.edited = true;
+        } else if (item.type === "chapter-body") {
+            item.ref.body = modifyString(
+                item.ref.body,
+                match.start,
+                match.end,
+                replaceValue,
+            );
+            item.ref.edited = true;
         }
 
+        if (typeof renderStory === "function") renderStory();
         findMatches();
-        if (matches.length > 0) {
-            if (currentMatchIndex >= matches.length) {
-                currentMatchIndex = 0;
-            }
-            highlightActiveMatch();
-        }
     }
 
     function replaceAll() {
         const findValue = document.getElementById("fnr-find-input").value;
-        if (!findValue) return;
-        saveStateForUndo();
+        if (!findValue || typeof STORY_DATA === "undefined") return;
 
+        saveStateForUndo();
         const replaceValue = document.getElementById("fnr-replace-input").value;
         saveHistory("find", findValue);
         saveHistory("replace", replaceValue);
@@ -381,31 +502,44 @@
         const regex = getSearchRegex(findValue, mode);
         if (!regex) return;
 
-        function processReplaceAll(node) {
-            if (node.nodeType === 3) {
-                const text = node.nodeValue;
-                if (regex.test(text)) {
-                    regex.lastIndex = 0;
-                    node.nodeValue = text.replace(regex, replaceValue);
+        STORY_DATA.title = STORY_DATA.title.replace(regex, replaceValue);
+        STORY_DATA.description = STORY_DATA.description.replace(
+            regex,
+            replaceValue,
+        );
+
+        let charText = STORY_DATA.characters.join("\n");
+        STORY_DATA.characters = charText
+            .replace(regex, replaceValue)
+            .split("\n");
+
+        if (Array.isArray(STORY_DATA.chapters)) {
+            STORY_DATA.chapters.forEach((ch) => {
+                let isChanged = false;
+                if (regex.test(ch.title)) {
+                    ch.title = ch.title.replace(regex, replaceValue);
+                    isChanged = true;
                 }
-            } else if (
-                node.nodeType === 1 &&
-                node.childNodes &&
-                node.id !== "fnr-box"
-            ) {
-                for (let i = 0; i < node.childNodes.length; i++) {
-                    processReplaceAll(node.childNodes[i]);
+                if (regex.test(ch.body)) {
+                    ch.body = ch.body.replace(regex, replaceValue);
+                    isChanged = true;
                 }
-            }
+                if (isChanged) ch.edited = true;
+            });
         }
 
-        clearMatches();
-        processReplaceAll(APP_DIV);
+        if (typeof renderStory === "function") renderStory();
+        currentMatchIndex = -1;
         findMatches();
+    }
+
+    function modifyString(str, start, end, replaceText) {
+        return str.substring(0, start) + replaceText + str.substring(end);
     }
 
     function initEvents() {
         const header = box.querySelector(".fnr-header");
+
         header.addEventListener("mousedown", (e) => {
             if (e.target.id === "fnr-close-x") return;
             isDragging = true;
@@ -415,16 +549,28 @@
             boxStartY = box.offsetTop;
         });
 
-        document.addEventListener("mousemove", (e) => {
+        globalMouseMoveHandler = (e) => {
             if (!isDragging) return;
             box.style.left = `${boxStartX + (e.clientX - dragStartX)}px`;
             box.style.top = `${boxStartY + (e.clientY - dragStartY)}px`;
             box.style.right = "auto";
-        });
+        };
 
-        document.addEventListener("mouseup", () => {
+        globalMouseUpHandler = () => {
             isDragging = false;
-        });
+        };
+
+        globalClickHandler = (e) => {
+            if (box && !box.contains(e.target)) {
+                document.getElementById("fnr-find-list").style.display = "none";
+                document.getElementById("fnr-replace-list").style.display =
+                    "none";
+            }
+        };
+
+        document.addEventListener("mousemove", globalMouseMoveHandler);
+        document.addEventListener("mouseup", globalMouseUpHandler);
+        document.addEventListener("click", globalClickHandler);
 
         document
             .getElementById("fnr-close-x")
@@ -453,6 +599,17 @@
             .getElementById("fnr-replace-all-btn")
             .addEventListener("click", replaceAll);
 
+        // Gắn sự kiện cho các nút xuất nhập dữ liệu mới
+        document
+            .getElementById("fnr-export-btn")
+            .addEventListener("click", exportHistoryJSON);
+
+        const fileInput = document.getElementById("fnr-file-input");
+        document
+            .getElementById("fnr-import-btn")
+            .addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", importHistoryJSON);
+
         const toggleDropdown = (type) => {
             const list = document.getElementById(`fnr-${type}-list`);
             list.style.display =
@@ -465,43 +622,33 @@
                 e.stopPropagation();
                 toggleDropdown("find");
             });
+
         document
             .getElementById("fnr-replace-drop-btn")
             .addEventListener("click", (e) => {
                 e.stopPropagation();
                 toggleDropdown("replace");
             });
-
-        document.addEventListener("click", () => {
-            if (box) {
-                document.getElementById("fnr-find-list").style.display = "none";
-                document.getElementById("fnr-replace-list").style.display =
-                    "none";
-            }
-        });
     }
 
     document.addEventListener("keydown", function (e) {
-        if (
-            e.altKey &&
-            (e.key === "h" || e.key === "H" || e.key === "ó" || e.key === "Ó")
-        ) {
-            e.preventDefault();
-            if (box) {
-                document.getElementById("fnr-find-input").focus();
-            } else {
-                createBox();
+        const key = e.key.toLowerCase();
+
+        if (e.altKey) {
+            if (key === "h") {
+                e.preventDefault();
+                if (box) {
+                    document.getElementById("fnr-find-input").focus();
+                } else {
+                    createBox();
+                }
+            } else if (key === "z") {
+                e.preventDefault();
+                performUndo();
+            } else if (key === "y") {
+                e.preventDefault();
+                performRedo();
             }
-        }
-
-        if (e.altKey && (e.key === "z" || e.key === "Z")) {
-            e.preventDefault();
-            performUndo();
-        }
-
-        if (e.altKey && (e.key === "y" || e.key === "Y")) {
-            e.preventDefault();
-            performRedo();
         }
 
         if (e.key === "Escape" && box) {

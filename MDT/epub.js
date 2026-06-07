@@ -19,19 +19,18 @@ async function exportEPUB() {
 
     const oebps = zip.folder("OEBPS");
     const chaptersXHTML =
-        STORY_DATA.chapters
-            .map(
-                (ch, i) => `
+        `
+        <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml"/>
+        <item id="desc" href="description.xhtml" media-type="application/xhtml+xml"/>
+        <item id="chars" href="characters.xhtml" media-type="application/xhtml+xml"/>
+        <item id="appendix" href="appendix.xhtml" media-type="application/xhtml+xml"/>
+` +
+        join("\n") +
+        STORY_DATA.chapters.map(
+            (ch, i) => `
     <item id="chap${i}" href="chap${i}.xhtml" media-type="application/xhtml+xml"/>
 `,
-            )
-            .join("\n") +
-        `
-<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml"/>
-<item id="desc" href="description.xhtml" media-type="application/xhtml+xml"/>
-<item id="chars" href="characters.xhtml" media-type="application/xhtml+xml"/>
-<item id="appendix" href="appendix.xhtml" media-type="application/xhtml+xml"/>
-`;
+        );
     const coverFile = document.getElementById("coverFile")?.files?.[0];
     const hasCover = !!coverFile;
 

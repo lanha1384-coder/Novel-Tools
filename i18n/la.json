@@ -35,6 +35,8 @@
 
     "import.txt.notify": "Importare file .txt",
     "subtitle.editor": "📖 EDITOR",
+    "subtitle.reader": "📖 Lector Fabularum",
+    "footer.mdt": "Lector Fabularum a TzhouSensei",
 
     "note.1": "Cum importas file .txt, contentum hanc structuram sequi debet:",
 

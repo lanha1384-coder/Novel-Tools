@@ -5,7 +5,7 @@
             <Prefix Keywords1="no" Keywords2="no" Keywords3="no" Keywords4="no" Keywords5="no" Keywords6="no" Keywords7="no" Keywords8="no" />
         </Settings>
         <KeywordLists>
-            <Keywords name="Comments">00&lt;!-- 00# 00&lt;comment&gt; 00&lt;info&gt; 01 02--&gt; 02((EOL)) 02&lt;/comment&gt; 02&lt;/info&gt; 03&lt;start&gt; 03&lt;!-- 03&lt;comment&gt; 03&lt;info&gt; 04&lt;end&gt; 04--&gt; 04&lt;/comment&gt; 04&lt;/info&gt;</Keywords>
+            <Keywords name="Comments">00&lt;!-- 00# 00&ltcomment&gt; 00&lt;info&gt; 01 02--&gt; 02((EOL)) 02&lt;/comment&gt; 02&lt;/info&gt; 03&lt;start&gt; 03&lt;!-- 03&lt;comment&gt; 03&lt;info&gt; 04&lt;end&gt; 04--&gt; 04&lt;/comment&gt; 04&lt;/info&gt;</Keywords>
             <Keywords name="Numbers, prefix1"></Keywords>
             <Keywords name="Numbers, prefix2"></Keywords>
             <Keywords name="Numbers, extras1"></Keywords>
@@ -15,12 +15,17 @@
             <Keywords name="Numbers, range"></Keywords>
             <Keywords name="Operators1">&amp; * , . ^ $ # @ ! ` ~ | ? : ; - _ = + &apos; &quot;</Keywords>
             <Keywords name="Operators2"></Keywords>
+            
             <Keywords name="Folders in code1, open">{ ( [ &lt;1 &lt;2 &lt;3 &lt;4 &lt;5 &lt;6 &lt;7 &lt;8 &lt;9 &lt;a &lt;b &lt;c &lt;d &lt;e &lt;f &lt;g &lt;h &lt;i &lt;j &lt;k &lt;l &lt;m &lt;n &lt;o &lt;p &lt;q &lt;r &lt;s &lt;t &lt;u &lt;v &lt;x &lt;y &lt;z &lt;w &lt;A &lt;B &lt;C &lt;D &lt;E &lt;F &lt;G &lt;H &lt;I &lt;J &lt;K &lt;L &lt;M &lt;N &lt;O &lt;P &lt;Q &lt;R &lt;S &lt;T &lt;U &lt;V &lt;X &lt;Y &lt;Z &lt;W &lt;&#x2022; &lt;&gt;</Keywords>
             <Keywords name="Folders in code1, middle"></Keywords>
+            
             <Keywords name="Folders in code1, close">} ) ] &lt;/1 &lt;/2 &lt;/3 &lt;/4 &lt;/5 &lt;/6 &lt;/7 &lt;/8 &lt;/9 &lt;/a &lt;/b &lt;/c &lt;/d &lt;/e &lt;/f &lt;/g &lt;/h &lt;/i &lt;/j &lt;/k &lt;/l &lt;/m &lt;/n &lt;/o &lt;/p &lt;/q &lt;/r &lt;/s &lt;/t &lt;/u &lt;/v &lt;/x &lt;/y &lt;/z &lt;/w &lt;/A &lt;/B &lt;/C &lt;/D &lt;/E &lt;/F &lt;/G &lt;/H &lt;/I &lt;/J &lt;/K &lt;/L &lt;/M &lt;/N &lt;/O &lt;/P &lt;/Q &lt;/R &lt;/S &lt;/T &lt;/U &lt;/V &lt;/X &lt;/Y &lt;/Z &lt;/W &lt;&#x2022;&gt; &lt;/&gt;</Keywords>
+            
             <Keywords name="Folders in code2, open">&lt;1 &lt;2 &lt;3 &lt;4 &lt;5 &lt;6 &lt;7 &lt;8 &lt;9 &lt;a &lt;b &lt;c &lt;d &lt;e &lt;f &lt;g &lt;h &lt;i &lt;j &lt;k &lt;l &lt;m &lt;n &lt;o &lt;p &lt;q &lt;r &lt;s &lt;t &lt;u &lt;v &lt;x &lt;y &lt;z &lt;w &lt;A &lt;B &lt;C &lt;D &lt;E &lt;F &lt;G &lt;H &lt;I &lt;J &lt;K &lt;L &lt;M &lt;N &lt;O &lt;P &lt;Q &lt;R &lt;S &lt;T &lt;U &lt;V &lt;X &lt;Y &lt;Z &lt;W &lt;&#x2022; &lt;&gt;</Keywords>
             <Keywords name="Folders in code2, middle"></Keywords>
+            
             <Keywords name="Folders in code2, close">&lt;/1 &lt;/2 &lt;/3 &lt;/4 &lt;/5 &lt;/6 &lt;/7 &lt;/8 &lt;/9 &lt;/a &lt;/b &lt;/c &lt;/d &lt;/e &lt;/f &lt;/g &lt;/h &lt;/i &lt;/j &lt;/k &lt;/l &lt;/m &lt;/n &lt;/o &lt;/p &lt;/q &lt;/r &lt;/s &lt;/t &lt;/u &lt;/v &lt;/x &lt;/y &lt;/z &lt;/w &lt;/A &lt;/B &lt;/C &lt;/D &lt;/E &lt;/F &lt;/G &lt;/H &lt;/I &lt;/J &lt;/K &lt;/L &lt;/M &lt;/N &lt;/O &lt;/P &lt;/Q &lt;/R &lt;/S &lt;/T &lt;/U &lt;/V &lt;/X &lt;/Y &lt;/Z &lt;/W &lt;&#x2022;&gt; &lt;/&gt;</Keywords>
+            
             <Keywords name="Folders in comment, open">/open\ &lt;opencmt&gt; usinfo.open uscmt.open</Keywords>
             <Keywords name="Folders in comment, middle"></Keywords>
             <Keywords name="Folders in comment, close">/close\ &lt;closecmt&gt; usinfo.close uscmt.close</Keywords>

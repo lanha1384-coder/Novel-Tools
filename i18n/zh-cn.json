@@ -35,6 +35,8 @@
 
     "import.txt.notify": "导入 .txt 文件",
     "subtitle.editor": "📖 编辑器",
+    "subtitle.reader": "📖 小说阅读器",
+    "footer.mdt": "TzhouSensei 小说阅读器",
 
     "note.1": "导入 .txt 文件时，内容必须遵循以下结构：",
 
