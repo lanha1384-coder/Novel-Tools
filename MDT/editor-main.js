@@ -193,14 +193,14 @@ function renderStory() {
     top.className = "top-actions";
 
     const epubBtn = document.createElement("button");
-    epubBtn.textContent = t("export.epub");
+    epubBtn.setAttribute("data-i18n", "export.epub");
 
     epubBtn.onclick = exportEPUB;
 
     top.appendChild(epubBtn);
 
     const fullBtn = document.createElement("button");
-    fullBtn.textContent = t("download.all");
+    fullBtn.setAttribute("data-i18n", "download.all");
 
     fullBtn.onclick = () => {
         let output = "";
@@ -231,7 +231,7 @@ function renderStory() {
     };
 
     const editedBtn = document.createElement("button");
-    editedBtn.textContent = t("download.changed");
+    editedBtn.setAttribute("data-i18n", "download.changed");
 
     editedBtn.onclick = () => {
         let output = "";
@@ -277,7 +277,7 @@ function renderStory() {
 
     const descDetails = document.createElement("details");
     const sum = document.createElement("summary");
-    sum.textContent = uiT("ui.description", "Mô tả");
+    sum.setAttribute("data-i18n", "ui.description");
 
     const descDiv = document.createElement("div");
     descDiv.className = "content";
@@ -295,7 +295,7 @@ function renderStory() {
 
     const charDetails = document.createElement("details");
     const charSum = document.createElement("summary");
-    charSum.textContent = uiT("ui.characters", "Danh sách nhân vật");
+    charSum.setAttribute("data-i18n", "ui.characters");
 
     const charDiv = document.createElement("div");
     charDiv.className = "content";
@@ -313,7 +313,7 @@ function renderStory() {
 
     const listDetails = document.createElement("details");
     const listSum = document.createElement("summary");
-    listSum.textContent = uiT("ui.chapters", "Danh sách chương");
+    listSum.setAttribute("data-i18n", "ui.chapters");
     listDetails.appendChild(listSum);
 
     const addBtn = document.createElement("button");
@@ -479,6 +479,7 @@ function renderStory() {
     app.appendChild(listDetails);
     restoreDetailsState(oldState);
     buildSearchIndex();
+    applyI18n();
     RENDER_LOCK = false;
 }
 
@@ -625,3 +626,13 @@ function deleteChapter(index) {
     buildSearchIndex();
     renderStory(false);
 }
+function applyI18n() {
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        if (!key) return;
+        el.textContent = t(key);
+    });
+}
+onI18nChange(() => {
+    renderStory();
+});

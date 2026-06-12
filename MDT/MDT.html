@@ -398,6 +398,7 @@
     <body>
         <a
             href="../index.html"
+            onclick="sessionStorage.setItem('reloaded_once', '1')"
             style="
                 position: fixed;
                 top: 15px;
@@ -458,7 +459,23 @@
             <p data-i18n="note.5"></p>
         </div>
         <div style="text-align: center; margin-top: 10px">
-            <input type="file" id="file" accept=".txt" />
+            <div id="version-switcher">
+                <label>
+                    <input type="radio" name="ver" onclick="switchApp('md')" />
+                    TXT Mode
+                </label>
+
+                <label>
+                    <input
+                        type="radio"
+                        name="ver"
+                        onclick="switchApp('epub')"
+                    />
+                    EPUB Mode(Lite Reader)
+                </label>
+            </div>
+
+            <input type="file" id="file" />
             <button id="clearFile" style="display: none; margin-left: 8px">
                 ❌
             </button>
@@ -474,7 +491,60 @@
                 data-i18n="noscript.tools"
             ></div>
         </noscript>
-        <script src="mdtrender.js"></script>
+        <script src="jszip.min.js"></script>
+        <script>
+            const APP_MAP = {
+                md: "mdtrender.js",
+                epub: "epub-reader.js",
+            };
+
+            const SCRIPT_ID = "app-script";
+
+            function loadSavedApp() {
+                let app = localStorage.getItem("activeApp");
+
+                if (!app) {
+                    app = "md";
+                    localStorage.setItem("activeApp", app);
+                }
+
+                loadApp(app);
+            }
+
+            function loadApp(app) {
+                const old = document.getElementById(SCRIPT_ID);
+                if (old) old.remove();
+
+                const appContainer = document.getElementById("app");
+                const status = document.getElementById("status");
+                const fileInput = document.getElementById("file");
+
+                if (appContainer) appContainer.innerHTML = "";
+                if (status) status.textContent = "";
+                if (fileInput) fileInput.value = "";
+
+                const script = document.createElement("script");
+                script.id = SCRIPT_ID;
+                script.src = APP_MAP[app];
+
+                script.onload = () => {
+                    console.log("🚀 Loaded app:", app);
+                };
+
+                document.body.appendChild(script);
+            }
+
+            function switchApp(app) {
+                if (!APP_MAP[app]) return;
+
+                localStorage.setItem("activeApp", app);
+                location.reload();
+            }
+
+            document.addEventListener("DOMContentLoaded", () => {
+                loadSavedApp();
+            });
+        </script>
         <script src="../i18n-2.js"></script>
         <script src="introscr.js"></script>
         <script src="loadscr.js"></script>

@@ -17,12 +17,14 @@ function renderChapter(div, content, scrollContainer) {
     });
     if (isEmpty) {
         div.classList.add("empty");
-        ["•", "Chưa cập nhật", "•"].forEach((text, i) => {
-            const span = document.createElement("span");
-            span.className = i === 1 ? "empty-text" : "bullet";
-            span.textContent = text;
-            div.appendChild(span);
-        });
+        ["•", t("reader.not_updated", "Chưa cập nhật"), "•"].forEach(
+            (text, i) => {
+                const span = document.createElement("span");
+                span.className = i === 1 ? "empty-text" : "bullet";
+                span.textContent = text;
+                div.appendChild(span);
+            },
+        );
     } else {
         const lines = content.split(/\r?\n/);
         let html = "";
@@ -86,7 +88,7 @@ function enableDetailsAnimation(details) {
 document.getElementById("file").addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    status.textContent = "📂 Đang tải file...";
+    status.textContent = t("reader.status_loading", "📂 Đang tải file EPUB...");
     status.style.color = "#666";
     app.classList.add("fade-out");
     const reader = new FileReader();
@@ -96,7 +98,10 @@ document.getElementById("file").addEventListener("change", (e) => {
                 parseText(reader.result);
                 hideIntro();
                 slideInDetails();
-                status.textContent = "✅ Tải thành công";
+                status.textContent = t(
+                    "reader.status_success",
+                    "✅ Tải thành công",
+                );
                 status.style.color = "green";
                 document.querySelector("h2").style.display = "none";
                 document.getElementById("chuy").style.display = "none";
@@ -105,7 +110,10 @@ document.getElementById("file").addEventListener("change", (e) => {
                 app.classList.add("fade-in");
             } catch (err) {
                 console.error(err);
-                status.textContent = "❌ File lỗi hoặc sai format";
+                status.textContent = t(
+                    "reader.status_error",
+                    "❌ File lỗi hoặc sai format EPUB",
+                );
                 status.style.color = "red";
             }
         }, 160);
@@ -118,7 +126,9 @@ document.getElementById("file").addEventListener("change", (e) => {
         const titleMatch = text.match(/<>\s*([\s\S]*?)\s*<\/>/);
         if (titleMatch) {
             const h1 = document.createElement("h1");
-            h1.textContent = titleMatch[1].trim();
+            h1.textContent =
+                titleMatch[1].trim() ||
+                t("reader.untitled_story", "Truyện không có tiêu đề");
             app.appendChild(h1);
             text = text.replace(titleMatch[0], "");
         }
@@ -133,7 +143,7 @@ document.getElementById("file").addEventListener("change", (e) => {
         }
         const descDetails = document.createElement("details");
         const descSummary = document.createElement("summary");
-        descSummary.textContent = "Mô tả";
+        descSummary.setAttribute("data-i18n", "reader.description_title");
         const descDiv = document.createElement("div");
         descDiv.className = "content";
         descDiv.textContent = descriptionContent;
@@ -162,7 +172,7 @@ document.getElementById("file").addEventListener("change", (e) => {
         }
         const charDetails = document.createElement("details");
         const charSummary = document.createElement("summary");
-        charSummary.textContent = "Danh sách nhân vật";
+        charSummary.setAttribute("data-i18n", "reader.character_list");
         const charDiv = document.createElement("div");
         charDiv.className = "content";
         const ul = document.createElement("ul");
@@ -184,7 +194,7 @@ document.getElementById("file").addEventListener("change", (e) => {
             const listContent = listChap[1];
             const folder = document.createElement("details");
             const folderSummary = document.createElement("summary");
-            folderSummary.textContent = "Danh sách chương";
+            folderSummary.setAttribute("data-i18n", "reader.chapter_list");
             const folderContent = document.createElement("div");
             folderContent.className = "content virtual-scroll";
             folder.appendChild(folderSummary);
@@ -257,10 +267,10 @@ document.getElementById("file").addEventListener("change", (e) => {
 
             async function lazyRenderContent(container, chapter) {
                 container.innerHTML = `
-        <div class="chapter-loading">
-            Đang tải chương...
-        </div>
-    `;
+                    <div class="chapter-loading">
+                        ${t("reader.chapter_loading", "Đang tải chương...")}
+                    </div>
+                `;
 
                 await new Promise((resolve) => {
                     requestAnimationFrame(() => {
@@ -301,7 +311,9 @@ document.getElementById("file").addEventListener("change", (e) => {
 
                 const summary = document.createElement("summary");
 
-                summary.textContent = chapter.title;
+                summary.textContent = chapter.isFallbackTitle
+                    ? `${t("reader.chapter_prefix", "Chương")} ${chapter.fallbackIndex}`
+                    : chapter.title;
 
                 details.appendChild(summary);
 
@@ -446,6 +458,9 @@ document.getElementById("file").addEventListener("change", (e) => {
                 });
             }, 300);
         }
+        requestAnimationFrame(() => {
+            applyI18n();
+        });
     }
 });
 function wrapSlideItems() {
@@ -480,3 +495,13 @@ clearBtn.addEventListener("click", () => {
     document.getElementById("chuy").style.display = "block";
     clearBtn.style.display = "none";
 });
+function applyI18n() {
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        if (!key) return;
+
+        const value = t(key);
+
+        el.innerHTML = value.replace(/\n/g, "<br>");
+    });
+}

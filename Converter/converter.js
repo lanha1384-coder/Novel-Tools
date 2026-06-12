@@ -255,7 +255,20 @@ fileInput.addEventListener("change", async (e) => {
             opfXml.querySelector("title")?.textContent?.trim() || "no title";
         const creator =
             opfXml.querySelector("creator")?.textContent?.trim() || "no author";
-        const genre = opfXml.querySelector("subject")?.textContent || "";
+        const genreNodes = opfXml.querySelectorAll("subject, dc\\:subject");
+
+        console.log("[DEBUG][GENRE] Raw nodes count:", genreNodes.length);
+
+        const genre = Array.from(genreNodes)
+            .map((el, idx) => {
+                const text = el.textContent?.trim();
+                console.log(`[DEBUG][GENRE][${idx}]`, text);
+                return text;
+            })
+            .filter(Boolean)
+            .join(", ");
+
+        console.log("[DEBUG][GENRE] Final parsed genre:", genre);
         const description =
             opfXml.querySelector("description")?.textContent?.trim() ||
             opfXml.querySelector("dc\\:description")?.textContent?.trim() ||

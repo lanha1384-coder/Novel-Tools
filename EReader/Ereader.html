@@ -1,0 +1,880 @@
+<!doctype html>
+<html lang="vi">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
+        <script src="domer.js"></script>
+        <title>Advanced EPUB Reader</title>
+        <script src="epub.min.js"></script>
+        <style>
+            :root {
+                --bg-color: #f7f4ed;
+                --text-color: #2b2b2b;
+                --border-color: #d3cfc5;
+                --overlay-bg: rgba(0, 0, 0, 0.4);
+                --panel-bg: #ffffff;
+                --accent-color: #4a90e2;
+                --corner-size: 120px;
+            }
+
+            [data-theme="dark"] {
+                --bg-color: #1a1a1a;
+                --text-color: #e0e0e0;
+                --border-color: #333333;
+                --overlay-bg: rgba(0, 0, 0, 0.7);
+                --panel-bg: #2a2a2a;
+                --accent-color: #357abd;
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+                user-select: none;
+            }
+
+            body {
+                font-family: serif;
+                background-color: var(--bg-color);
+                color: var(--text-color);
+                overflow: hidden;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                transition:
+                    background 0.3s,
+                    color 0.3s;
+            }
+
+            #top-bar {
+                height: 60px;
+                border-bottom: 1px solid var(--border-color);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 20px;
+                background-color: var(--panel-bg);
+                z-index: 10;
+            }
+
+            #book-title {
+                font-size: 1.2rem;
+                font-weight: bold;
+                text-align: center;
+                flex-grow: 1;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                padding: 0 20px;
+            }
+
+            #main-container {
+                flex: 1;
+                display: flex;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .meta-sidebar {
+                width: 250px;
+                padding: 20px;
+                overflow-y: auto;
+                border-right: 1px solid var(--border-color);
+                font-size: 0.9rem;
+                background-color: var(--panel-bg);
+            }
+            #sidebar-right {
+                border-right: none;
+                border-left: 1px solid var(--border-color);
+            }
+            @media (max-width: 1200px) {
+                .meta-sidebar {
+                    display: none;
+                }
+            }
+            #reader-center {
+                flex: 1;
+                max-width: 1200px;
+                min-width: 320px;
+                margin: 0 auto;
+                position: relative;
+                display: flex;
+                flex-direction: column;
+            }
+
+            #reader-view {
+                flex: 1;
+                padding: 40px;
+                position: relative;
+                overflow: hidden;
+            }
+
+            #chapter-content {
+                height: 100%;
+                column-fill: auto;
+                column-gap: 40px;
+                transition:
+                    transform 0.3s ease,
+                    font-size 0.2s ease;
+            }
+            #chapter-content p {
+                text-indent: 2em;
+                margin-bottom: 0.8em;
+                line-height: 1.6;
+                text-align: justify;
+                user-select: text;
+            }
+            #chapter-content pre {
+                white-space: pre-wrap !important;
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+            }
+            #chapter-content img {
+                max-width: 100%;
+                height: auto;
+                display: block;
+                margin: 10px auto;
+            }
+
+            .mode-single #chapter-content {
+                column-count: 1;
+            }
+            .mode-double #chapter-content {
+                column-count: 2;
+            }
+            .mode-double #reader-view::after {
+                content: "";
+                position: absolute;
+                top: 40px;
+                bottom: 40px;
+                left: 50%;
+                width: 1px;
+                background-color: var(--border-color);
+                pointer-events: none;
+            }
+
+            #zone-left {
+                position: absolute;
+                left: 0;
+                top: var(--corner-size);
+                bottom: var(--corner-size);
+
+                width: 25%;
+
+                z-index: 5;
+                cursor: pointer;
+            }
+
+            #zone-center {
+                position: absolute;
+
+                left: 25%;
+                width: 50%;
+
+                top: -30px;
+                bottom: 0;
+
+                z-index: 5;
+                cursor: pointer;
+            }
+
+            #zone-right {
+                position: absolute;
+
+                right: 0;
+                top: var(--corner-size);
+                bottom: var(--corner-size);
+
+                width: 25%;
+
+                z-index: 5;
+                cursor: pointer;
+            }
+
+            .corner-btn {
+                position: absolute;
+                z-index: 6;
+                background: var(--panel-bg);
+                border: 1px solid var(--border-color);
+                padding: 5px 10px;
+                border-radius: 4px;
+                cursor: pointer;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s;
+                font-size: 0.85rem;
+            }
+            #reader-center:hover .corner-btn,
+            .settings-active .corner-btn {
+                opacity: 0;
+                pointer-events: auto;
+            }
+            #btn-tl,
+            #btn-tr,
+            #btn-bl,
+            #btn-br {
+                width: var(--corner-size);
+                height: var(--corner-size);
+
+                padding: 0;
+
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            #btn-tr:hover {
+                opacity: 1 !important;
+            }
+            #btn-tl {
+                top: 0;
+                left: 0;
+            }
+
+            #btn-tr {
+                position: absolute;
+                top: 0;
+                right: 0;
+
+                flex-direction: row;
+                gap: 6px;
+
+                z-index: 6;
+
+                background: var(--panel-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+            }
+            #btn-tr.corner-btn {
+                padding: 0;
+            }
+
+            #btn-bl {
+                bottom: 0;
+                left: 0;
+            }
+
+            #btn-br {
+                bottom: 0;
+                right: 0;
+            }
+
+            .dropdown-menu {
+                display: none;
+                position: absolute;
+                top: 40px;
+                left: 10px;
+                background: var(--panel-bg);
+                border: 1px solid var(--border-color);
+                padding: 10px;
+                border-radius: 4px;
+                z-index: 7;
+                flex-direction: column;
+                gap: 5px;
+            }
+            .dropdown-menu::after {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .dropdown-menu::after .row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .dropdown-menu::after label {
+                min-width: 140px;
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: var(--overlay-bg);
+                z-index: 100;
+            }
+
+            #toc-panel {
+                position: absolute;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 350px;
+                background: var(--panel-bg);
+                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+                padding: 20px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+            }
+            #toc-list {
+                list-style: none;
+                margin-top: 15px;
+            }
+            #toc-list li {
+                padding: 10px;
+                border-bottom: 1px solid var(--border-color);
+                cursor: pointer;
+            }
+            #toc-list li:hover {
+                background: var(--border-color);
+            }
+
+            #settings-overlay {
+                background: transparent;
+                pointer-events: none;
+            }
+            #settings-panel {
+                pointer-events: auto;
+                position: absolute;
+                bottom: 60px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 90%;
+                max-width: 600px;
+                background: var(--panel-bg);
+                border: 2px solid var(--accent-color);
+                border-radius: 8px;
+                padding: 15px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+                justify-content: space-around;
+            }
+            .control-group {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 0.9rem;
+            }
+
+            #bottom-bar {
+                height: 40px;
+                border-top: 1px solid var(--border-color);
+                background-color: var(--panel-bg);
+                display: flex;
+                align-items: center;
+                padding: 0 20px;
+                z-index: 10;
+            }
+            #progress-container {
+                flex: 1;
+                height: 6px;
+                background: var(--border-color);
+                border-radius: 3px;
+                margin: 0 15px;
+                position: relative;
+                cursor: pointer;
+            }
+            #progress-bar {
+                height: 100%;
+                width: 0%;
+                background: var(--accent-color);
+                border-radius: 3px;
+            }
+
+            .btn,
+            .import-btn {
+                padding: 6px 12px;
+                border: 1px solid var(--border-color);
+                background: var(--panel-bg);
+                color: var(--text-color);
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .btn:hover,
+            .import-btn:hover {
+                background: var(--accent-color);
+                color: white;
+            }
+            .import-btn {
+                margin: 0 0 0 110px;
+            }
+            .hidden {
+                display: none !important;
+            }
+
+            .text-bold {
+                font-weight: bold;
+            }
+            .text-underline {
+                text-decoration: underline;
+            }
+            .text-italic {
+                font-style: italic;
+            }
+            #zone-left::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+
+                width: 1px;
+                background: rgba(0, 0, 0, 0.5);
+
+                pointer-events: none;
+            }
+            #zone-right::after {
+                content: "";
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                right: 0;
+
+                width: 1px;
+                background: rgba(0, 0, 0, 0.5);
+
+                pointer-events: none;
+            }
+            #viewer-toolbar {
+                height: 50px;
+                border-bottom: 1px solid var(--border-color);
+                background: var(--panel-bg);
+
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                z-index: 9;
+                flex-shrink: 0;
+            }
+
+            #font-slider {
+                width: 280px;
+            }
+
+            #font-size-display {
+                min-width: 50px;
+                text-align: center;
+                font-weight: bold;
+            }
+            .lang-wrapper {
+                position: fixed;
+                top: 1px;
+                right: 180px;
+
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+
+                padding: 5px 12px;
+                border-radius: 12px;
+
+                background: rgba(255, 255, 255, 0.05);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+
+                color: white;
+                font-family: system-ui, sans-serif;
+                z-index: 11;
+                background: radial-gradient(circle at top, #1a1a2e, #0f0f0f);
+            }
+
+            .lang-label {
+                font-size: 12px;
+                opacity: 0.7;
+                z-index: 15;
+            }
+
+            .lang-select {
+                background: rgba(0, 0, 0, 0.4);
+                color: white;
+
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 8px;
+
+                padding: 6px 10px;
+
+                outline: none;
+                cursor: pointer;
+
+                transition: 0.2s;
+                z-index: 11;
+            }
+
+            .lang-select:hover {
+                border-color: rgba(0, 255, 255, 0.5);
+                box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+                z-index: 12;
+            }
+
+            .lang-select option {
+                background: #111;
+                color: white;
+                z-index: 12;
+            }
+            .texture-sepia {
+                background-color: #f4ecd8 !important;
+                color: #5b4636 !important;
+            }
+            .texture-paper {
+                background-color: #faf9f5 !important;
+                background-image:
+                    radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 0),
+                    radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 0) !important;
+                background-size: 4px 4px !important;
+                background-position:
+                    0 0,
+                    2px 2px !important;
+                color: #222222 !important;
+            }
+
+            .epub-hl {
+                border-bottom: 2px dashed rgba(0, 0, 0, 0.2);
+                cursor: pointer;
+                transition: opacity 0.2s;
+            }
+            .epub-hl:hover {
+                opacity: 0.8;
+            }
+
+            .ux-control-panel {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                padding: 15px;
+            }
+        </style>
+    </head>
+    <body class="mode-single">
+        <div class="lang-wrapper">
+            <label class="lang-label" data-i18n="lang.option"></label>
+
+            <select onchange="setLang(this.value)">
+                <option value="vi-vn">🇻🇳 Tiếng Việt</option>
+                <option value="en-us">🇺🇸 English</option>
+                <option value="ja-jp">🇯🇵 日本語</option>
+                <option value="ko-kr">🇰🇷 한국어</option>
+                <option value="zh-cn">🇨🇳 简体中文</option>
+                <option value="zh-tw">🇹🇼 繁體中文</option>
+                <option value="th-th">🇹🇭 ไทย</option>
+                <option value="id-id">🇮🇩 Indonesia</option>
+                <option value="de-de">🇩🇪 Deutsch</option>
+                <option value="fr-fr">🇫🇷 Français</option>
+                <option value="es-es">🇪🇸 Español</option>
+                <option value="la">🏛️Latina</option>
+            </select>
+        </div>
+        <a
+            href="index.html"
+            onclick="sessionStorage.setItem('reloaded_once', '1')"
+            style="
+                position: fixed;
+                top: 15px;
+                left: 15px;
+                padding: 10px 14px;
+                background: rgba(0, 0, 0, 0.6);
+                color: white;
+                text-decoration: none;
+                border-radius: 10px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                backdrop-filter: blur(6px);
+                z-index: 11;
+            "
+        >
+            ⬅ Home
+        </a>
+        <header id="top-bar">
+            <input
+                type="file"
+                id="file-input"
+                accept=".epub"
+                style="display: none"
+            />
+            <button
+                class="import-btn"
+                onclick="document.getElementById('file-input').click()"
+                data-i18n="ereader.import_epub"
+            ></button>
+            <div id="book-title" data-i18n="ereader.no_book_loaded"></div>
+            <button
+                class="btn"
+                onclick="toggleOverlay('toc-overlay', true)"
+                data-i18n="ereader.toc"
+            ></button>
+        </header>
+
+        <main id="main-container">
+            <aside class="meta-sidebar" id="sidebar-left">
+                <h3 data-i18n="ereader.metadata"></h3>
+                <div id="meta-cover" style="margin: 15px 0">
+                    <div
+                        style="
+                            width: 160px;
+                            height: 224px;
+                            background: #ccc;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 0.8rem;
+                        "
+                        data-i18n="ereader.no_cover"
+                    ></div>
+                </div>
+                <p>
+                    <strong data-i18n="ereader.author"></strong>
+                    <span id="meta-author">-</span>
+                </p>
+                <p>
+                    <strong data-i18n="ereader.subject"></strong>
+                    <span id="meta-subject">-</span>
+                </p>
+            </aside>
+
+            <section id="reader-center">
+                <div
+                    class="nav-zone"
+                    id="zone-left"
+                    onclick="navigatePage(-1)"
+                ></div>
+                <div
+                    class="nav-zone"
+                    id="zone-center"
+                    onclick="toggleSettingsMenu()"
+                ></div>
+                <div
+                    class="nav-zone"
+                    id="zone-right"
+                    onclick="navigatePage(1)"
+                ></div>
+
+                <button
+                    class="corner-btn"
+                    id="btn-tl"
+                    onclick="toggleDropdown('menu-tl')"
+                    data-i18n="ereader.style"
+                ></button>
+                <div class="dropdown-menu" id="menu-tl">
+                    <div class="row">
+                        <label data-i18n="ereader.background_color"> </label>
+                        <input
+                            type="color"
+                            id="cfg-bg"
+                            value="#f7f4ed"
+                            onchange="changeCustomStyle('bg', this.value)"
+                        />
+                    </div>
+                    <div class="row">
+                        <label data-i18n="ereader.text_color"> </label>
+                        <input
+                            type="color"
+                            id="cfg-text"
+                            value="#2b2b2b"
+                            onchange="changeCustomStyle('text', this.value)"
+                        />
+                    </div>
+                    <div class="row">
+                        <label data-i18n="ereader.font"> </label>
+                        <select
+                            id="cfg-font"
+                            onchange="changeCustomStyle('font', this.value)"
+                        >
+                            <option value="Arial">Arial</option>
+                            <option value="Times New Roman">
+                                Times New Roman
+                            </option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Tahoma">Tahoma</option>
+                            <option value="Trebuchet MS">Trebuchet MS</option>
+                            <option value="Georgia Pro">Georgia Pro</option>
+                            <option value="Courier New">Courier New</option>
+                            <option value="Comic Sans MS">Comic Sans MS</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="corner-btn" id="btn-tr">
+                    <button class="btn" onclick="toggleTextDecoration('bold')">
+                        B
+                    </button>
+                    <button
+                        class="btn"
+                        onclick="toggleTextDecoration('underline')"
+                    >
+                        U
+                    </button>
+                    <button
+                        class="btn"
+                        onclick="toggleTextDecoration('italic')"
+                    >
+                        I
+                    </button>
+                </div>
+
+                <button
+                    class="corner-btn"
+                    id="btn-bl"
+                    onclick="navigateChapter(-1)"
+                    data-i18n="ereader.previous_chapter"
+                ></button>
+                <button
+                    class="corner-btn"
+                    id="btn-br"
+                    onclick="navigateChapter(1)"
+                    data-i18n="ereader.next_chapter"
+                ></button>
+                <div id="viewer-toolbar">
+                    <span style="font-size: 14px">A</span>
+
+                    <input
+                        type="range"
+                        id="font-slider"
+                        min="35"
+                        max="185"
+                        value="100"
+                        oninput="updateFontScale(this.value)"
+                    />
+
+                    <span style="font-size: 24px">A</span>
+
+                    <span id="font-size-display">100%</span>
+                </div>
+
+                <div id="reader-view">
+                    <div id="chapter-content">
+                        <h2
+                            style="text-align: center; margin-top: 20%"
+                            data-i18n="ereader.import_to_start"
+                        ></h2>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="meta-sidebar" id="sidebar-right">
+                <h3 data-i18n="ereader.description"></h3>
+                <p
+                    id="meta-description"
+                    style="
+                        margin-top: 10px;
+                        line-height: 1.4;
+                        text-align: justify;
+                    "
+                >
+                    -
+                </p>
+            </aside>
+        </main>
+
+        <footer id="bottom-bar">
+            <span id="chapter-mark-indicator" style="font-size: 0.85rem"></span>
+            <div id="progress-container" onclick="jumpToProgress(event)">
+                <div id="progress-bar"></div>
+            </div>
+            <span id="progress-percent" style="font-size: 0.85rem">0%</span>
+        </footer>
+
+        <div
+            class="overlay"
+            id="toc-overlay"
+            onclick="toggleOverlay('toc-overlay', false)"
+        >
+            <div
+                id="toc-panel"
+                onclick="event.stopPropagation()"
+                data-i18n="ereader.table_of_contents"
+            >
+                <h2></h2>
+                <ul id="toc-list"></ul>
+            </div>
+        </div>
+
+        <div class="overlay" id="settings-overlay">
+            <div id="settings-panel">
+                <div class="control-group">
+                    <button
+                        class="btn"
+                        onclick="toggleTheme()"
+                        data-i18n="ereader.toggle_theme"
+                    ></button>
+                </div>
+                <div class="control-group">
+                    <button
+                        class="btn"
+                        onclick="togglePageMode()"
+                        data-i18n="ereader.toggle_page_mode"
+                    ></button>
+                </div>
+                <div class="control-group">
+                    <label data-i18n="ereader.font_size"></label>
+                    <button class="btn" onclick="adjustFontSize(-2)">A-</button>
+                    <button class="btn" onclick="adjustFontSize(2)">A+</button>
+                </div>
+                <div class="control-group">
+                    <label data-i18n="ereader.auto_scroll"></label>
+                    <input
+                        type="number"
+                        id="auto-scroll-speed"
+                        value="0"
+                        min="0"
+                        max="60"
+                        style="width: 50px; padding: 4px"
+                        onchange="toggleAutoScroll(this.value)"
+                    />
+                </div>
+                <div class="control-group">
+                    <label data-i18n="ereader.tilt_page_turn"></label>
+                    <input
+                        type="checkbox"
+                        id="cfg-tilt"
+                        onchange="state.tiltFlip = this.checked"
+                    />
+                </div>
+                <div class="control-group">
+                    <label data-i18n="ereader.volume_key_navigation"></label>
+                    <input
+                        type="checkbox"
+                        id="cfg-vol"
+                        checked
+                        onchange="state.overrideVol = this.checked"
+                    />
+                </div>
+                <div
+                    class="control-group"
+                    style="
+                        width: 100%;
+                        border-top: 1px solid #ccc;
+                        padding-top: 10px;
+                        margin-top: 5px;
+                    "
+                >
+                    <label data-i18n="ereader.tts"></label>
+                    <select id="tts-voice" style="max-width: 150px"></select>
+                    <label data-i18n="ereader.volume">
+                        <input
+                            type="range"
+                            id="tts-volume"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value="1"
+                    /></label>
+                    <label data-i18n="ereader.speed">
+                        <input
+                            type="range"
+                            id="tts-speed"
+                            min="0.5"
+                            max="2"
+                            step="0.1"
+                            value="1"
+                    /></label>
+                    <button
+                        class="btn"
+                        onclick="toggleTTS()"
+                        data-i18n="ereader.read_stop"
+                    ></button>
+                </div>
+            </div>
+        </div>
+
+        <script src="reader.js"></script>
+        <script src="../i18n-2.js"></script>
+    </body>
+</html>

@@ -179,7 +179,24 @@ fileInput.addEventListener("change", async (e) => {
         getMetaContent(opfXml, "meta[name='comment']") ||
         getMetaContent(opfXml, "dc\\:comment");
 
-    const genre = opfXml.querySelector("subject")?.textContent || "";
+    const genreNodes = opfXml.querySelectorAll("subject, dc\\:subject");
+
+    console.log("[DEBUG][GENRE] nodes found:", genreNodes.length);
+
+    const genreList = Array.from(genreNodes)
+        .map((el, idx) => {
+            const text = el.textContent?.trim();
+
+            console.log(`[DEBUG][GENRE][${idx}] raw:`, text);
+
+            return text;
+        })
+        .filter(Boolean);
+
+    const genre = genreList.join(", ");
+
+    console.log("[DEBUG][GENRE] final:", genre);
+    console.log("[DEBUG][GENRE] array:", genreList);
 
     const manifestItems = {};
     opfXml.querySelectorAll("manifest item").forEach((item) => {
