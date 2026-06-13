@@ -1,5 +1,4 @@
-name: Build Electron App
-
+name: Mac Build
 on:
   workflow_dispatch:
   push:
